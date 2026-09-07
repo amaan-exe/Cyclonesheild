@@ -1,0 +1,130 @@
+# ============================================================================
+# Cyclone Horizon — Pipeline Configuration
+# All parameters are here. Nothing is hardcoded in scripts.
+# ============================================================================
+
+project:
+  name: "CycloneHorizon"
+  version: "0.1.0"
+  basin: "NI"  # North Indian Ocean (IBTrACS basin code)
+
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  features_data: "data/features"
+  datasets: "data/datasets"
+  quarantine: "data/quarantine"
+  checkpoints: "outputs/checkpoints"
+  predictions: "outputs/predictions"
+  reports: "outputs/reports"
+  visualizations: "outputs/visualizations"
+
+# --- Data acquisition ---
+ingestion:
+  ibtracs:
+    url: "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv"
+    basin: "NI"
+    year_range: [2000, 2025]
+    output_file: "data/raw/ibtracs_ni.parquet"
+  
+  era5:
+    variables: ["mean_sea_level_pressure", "u_component_of_wind", "v_component_of_wind", "relative_humidity"]
+    pressure_levels: [200, 500, 850]
+    grid_resolution: 0.25  # degrees
+    buffer_degrees: 5.0    # box around storm center
+  
+  oisst:
+    url_template: "https://www.ncei.noaa.gov/data/sea-surface-temperature-optimum-interpolation/v2.1/access/avhrr/{year}{month}/oisst-avhrr-v02r01.{date}.nc"
+    variable: "sst"
+
+# --- Preprocessing ---
+preprocessing:
+  crop_window_km: 601
+  image_size: [224, 224]  # resize after crop
+  normalization:
+    method: "zscore"  # "zscore" | "minmax"
+    compute_from: "train_only"  # CRITICAL: never compute stats from full dataset
+  
+  augmentation:
+    rotation_range: [0, 360]
+    horizontal_flip: true   # hemisphere-aware: only for Southern Hemisphere storms
+    brightness_jitter: 0.1
+    contrast_jitter: 0.1
+    enabled: true
+
+# --- Sequence construction (for prediction models) ---
+sequence:
+  past_steps: 8
+  future_steps: 8
+  interval_hours: 3
+  max_gap_hours: 12  # flag sequences spanning gaps > this
+
+# --- Dataset splitting ---
+splitting:
+  ratios:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  split_by: "storm"          # NEVER by frame
+  stratify_by: ["imd_category", "basin"]
+  random_seed: 42
+
+# --- Physical bounds (QC validation) ---
+physical_bounds:
+  brightness_temperature:
+    min_K: 170
+    max_K: 330
+  max_wind_kt: 200
+  min_pressure_hpa: 870
+  max_pressure_hpa: 1020
+  nio_basin_bounds:
+    lat_min: 0
+    lat_max: 30
+    lon_min: 50
+    lon_max: 100
+
+# --- Feature engineering ---
+features:
+  radial_profile:
+    max_radius_km: 200
+    ring_width_km: 10
+    n_rings: 20
+  
+  eye_detection:
+    min_radius_km: 10
+    max_radius_km: 50
+    hough_param1: 50
+    hough_param2: 30
+  
+  rolling_windows_hours: [12, 24]
+  
+  environmental:
+    sst_interpolation: "bilinear"
+    shear_levels: [850, 200]  # hPa
+
+# --- IMD category thresholds (max sustained wind in knots) ---
+imd_categories:
+  - name: "Low Pressure Area"
+    wind_range: [0, 17]
+    code: "LPA"
+  - name: "Depression"
+    wind_range: [17, 27]
+    code: "D"
+  - name: "Deep Depression"
+    wind_range: [28, 33]
+    code: "DD"
+  - name: "Cyclonic Storm"
+    wind_range: [34, 47]
+    code: "CS"
+  - name: "Severe Cyclonic Storm"
+    wind_range: [48, 63]
+    code: "SCS"
+  - name: "Very Severe Cyclonic Storm"
+    wind_range: [64, 89]
+    code: "VSCS"
+  - name: "Extremely Severe Cyclonic Storm"
+    wind_range: [90, 119]
+    code: "ESCS"
+  - name: "Super Cyclonic Storm"
+    wind_range: [120, 999]
+    code: "SuCS"

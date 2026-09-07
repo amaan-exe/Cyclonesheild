@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# PostgreSQL local database directory & locks
+pgdata/
+*.postmaster.pid
+postmaster.pid
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Operating System
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Scratch and intermediate generation files
+user_prompt.txt
+ppt_slides.txt
+parse_ppt.py
+
+# Checkpoints & Model Weights (too large for GitHub)
+*.pt
+*.pth
+*.ckpt
+*.joblib
+*.bin
+*.onnx
+*.safetensors
+
+# Large binary datasets
+data/
+datasets/
+outputs/
+*.npy
+*.npz
+*.nc
+*.nc4
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.tar.gz
+*.tgz
+*.zip

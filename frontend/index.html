@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyclone Shield AI — National Tropical Cyclone AI Identification & Prediction System | Govt. of India</title>
+  
+  <!-- Leaflet CSS for GIS Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Custom Government of India Aesthetic CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Tricolor Ribbon -->
+  <div class="tricolor-ribbon">
+    <div class="stripe-saffron"></div>
+    <div class="stripe-white"></div>
+    <div class="stripe-green"></div>
+  </div>
+
+  <!-- Utility / Accessibility Bar -->
+  <div class="utility-bar">
+    <div class="utility-left">
+      <span>भारत सरकार | Government of India</span>
+      <span>पृथ्वी विज्ञान मंत्रालय | Ministry of Earth Sciences</span>
+      <span>IMD Cyclone Warning Services</span>
+    </div>
+    <div class="utility-right">
+      <span class="helpline-badge">🚨 DISASTER HELPLINE: 1070 / 112</span>
+      <span>ODISHA DEOC: 1077</span>
+      <div class="lang-selector-wrap" style="display: inline-flex; align-items: center; gap: 4px;">
+        <span style="font-weight: 700; font-size: 11px;">🌐</span>
+        <select id="lang-selector" class="lang-select" onchange="setLanguage(this.value)">
+          <option value="en" selected>English</option>
+          <option value="or">ଓଡ଼ିଆ (Odia)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+          <option value="te">తెలుగు (Telugu)</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-audio-siren" onclick="speakEmergencyAdvisory()" title="Listen to spoken Emergency Alert Advisory">🔊 Audio Alert</button>
+      <button class="btn btn-secondary btn-sm" id="btn-offline-toggle" onclick="toggleOfflineMode()" title="Toggle Offline Simulation">📡 <span id="net-status-text">Online</span></button>
+    </div>
+  </div>
+
+  <!-- Main Navy Header -->
+  <header class="goi-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <!-- Ashoka Lion Emblem Representation -->
+        <svg class="emblem-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="30" r="16" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+          <path d="M40 30 L60 30 M50 20 L50 40 M42 22 L58 38 M42 38 L58 22" stroke="#FFFFFF" stroke-width="1.5"/>
+          <rect x="30" y="52" width="40" height="12" fill="#FFFFFF"/>
+          <text x="50" y="62" font-size="7" font-weight="bold" fill="#0B2F5E" text-anchor="middle">सत्यमेव जयते</text>
+          <path d="M25 68 Q50 82 75 68 L70 98 Q50 110 30 98 Z" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="50" cy="85" r="7" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+        </svg>
+        <div class="brand-text">
+          <h1>
+            CYCLONE SHIELD AI
+            <span class="sih-badge">SIH 2026 #26070</span>
+          </h1>
+          <div class="brand-subtitle">
+            Unified AI Tropical Cyclone Identification, 72h Physics-Informed Track Prediction & Emergency SOS Portal — Team Hexaminds
+          </div>
+        </div>
+      </div>
+      <div class="header-status-area">
+        <div class="telemetry-pill">
+          <div><span class="live-indicator"></span><strong id="header-clock">--:--:-- IST</strong></div>
+          <div class="subtext">SATELLITE FEED: MOSDAC INSAT-3DR (ACTIVE)</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <ul class="nav-tabs">
+        <li><button class="nav-tab-btn active" id="tab-landing" onclick="switchView('landing')">🛰️ GIS Map & Advisory</button></li>
+        <li><button class="nav-tab-btn" id="tab-citizen" onclick="switchView('citizen')">🛡️ Citizen Portal & SOS</button></li>
+        <li><button class="nav-tab-btn" id="tab-authority" onclick="switchView('authority')">🏛️ Authorities Portal</button></li>
+        <li><button class="nav-tab-btn" id="tab-shelters" onclick="switchView('shelters')">🏠 Capacity-Aware Shelters</button></li>
+        <li><button class="nav-tab-btn" id="tab-chat" onclick="switchView('chat')">🤖 Scoped AI Assistant</button></li>
+      </ul>
+      <div class="nav-auth-status">
+        <span id="nav-user-label" class="badge badge-navy">Public Access</span>
+        <button class="btn btn-secondary btn-sm" id="btn-auth-action" onclick="handleAuthAction()">Login</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flat Red Advisory Banner -->
+  <div class="alert-banner" id="global-alert-banner">
+    <div class="alert-container">
+      <div class="alert-left">
+        <span class="alert-pill">BULLETIN #16</span>
+        <span class="alert-title" id="banner-warning-status">RED ALERT — VERY SEVERE CYCLONIC STORM (CYCLONE DANA)</span>
+      </div>
+      <div class="alert-meta" id="banner-alert-meta">
+        Landfall expected near Puri & Dhamra Coast within 12-14 hours. Winds 120-145 km/h. Mandatory evacuation underway.
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Status Alert Banner (Visible when offline or simulated) -->
+  <div class="offline-banner" id="offline-status-banner" style="display: none;">
+    <div class="offline-banner-content">
+      <span class="offline-badge">📡 OFFLINE EMERGENCY MODE</span>
+      <span id="offline-banner-text">Network disconnected. Offline Emergency Pack active — viewing locally cached evacuation routes, shelters & safety protocols.</span>
+      <button class="btn btn-sm" style="background:#FFF; color:#92400E; font-weight:700; border:1px solid #D97706; padding: 2px 8px;" onclick="downloadOfflineEmergencyPack()">📥 Download Pack</button>
+      <button class="btn btn-sm" style="background:transparent; color:#92400E; border:none; text-decoration:underline; cursor:pointer;" onclick="toggleOfflineMode(false)">Reconnect</button>
+    </div>
+  </div>
+
+  <!-- Executive Command Telemetry Ribbon (Consolidated 6-Metric Critical Overview) -->
+  <section class="command-telemetry-bar" id="executive-telemetry-strip">
+    <div class="cmd-metric-item">
+      <div class="cmd-metric-icon">🌀</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Active System</span>
+        <span class="cmd-val" id="strip-storm-name">Dana (VSCS)</span>
+      </div>
+    </div>
+    <div class="cmd-metric-item">
+      <div class="cmd-metric-icon">👁️</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Eye Position</span>
+        <span class="cmd-val" id="strip-coords">18.42°N, 86.85°E</span>
+      </div>
+    </div>
+    <div class="cmd-metric-item highlight-alert">
+      <div class="cmd-metric-icon">⏳</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Landfall Window</span>
+        <span class="cmd-val alert-red-text" id="strip-landfall-eta">12–14 Hours</span>
+      </div>
+    </div>
+    <div class="cmd-metric-item">
+      <div class="cmd-metric-icon">💨</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Sustained Wind</span>
+        <span class="cmd-val" id="strip-wind">120 km/h (Gusts: 145)</span>
+      </div>
+    </div>
+    <div class="cmd-metric-item">
+      <div class="cmd-metric-icon">🌊</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Storm Surge</span>
+        <span class="cmd-val" style="color: #0284C7;" id="strip-surge">2.0 – 3.2 m</span>
+      </div>
+    </div>
+    <div class="cmd-metric-item">
+      <div class="cmd-metric-icon">🏠</div>
+      <div class="cmd-metric-data">
+        <span class="cmd-label">Shelters Ready</span>
+        <span class="cmd-val" style="color: var(--green-status);" id="strip-shelters">8 Active (3.6k beds)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main View Area -->
+  <main class="main-wrapper">
+
+    <!-- =========================================================
+         VIEW 1: PUBLIC LANDING PAGE & GIS MAP
+         ========================================================= -->
+    <section id="view-landing" class="app-view active-view">
+
+      <!-- =========================================================
+           STAGED PREDICTION FUNNEL (T-18d -> T-14d -> T-7d -> T-3d)
+           ========================================================= -->
+      <div class="funnel-controller-card" id="staged-funnel-widget">
+        <div class="funnel-top-bar">
+          <div class="funnel-brand">
+            <span class="funnel-logo-icon">🌪️</span>
+            <span class="funnel-title">OPERATIONAL PREDICTION HORIZON</span>
+            <span class="badge badge-navy">4-Tier Early Warning Funnel</span>
+          </div>
+          <div class="funnel-btn-group">
+            <button class="btn btn-secondary btn-sm" id="btn-play-funnel" onclick="togglePlayFunnel()">
+              <span id="funnel-play-icon">▶</span> Play Progression
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="selectFunnelStage('t3_track_intensity')">
+              Reset to Active (T-3d)
+            </button>
+          </div>
+        </div>
+
+        <!-- 4-Stage Horizontal Interactive Horizon Stepper -->
+        <div class="horizon-stepper" id="funnel-steps-container">
+          <div class="horizon-step stage-18d" id="funnel-card-t18" onclick="selectFunnelStage('t18_regional_risk')">
+            <div class="step-badge">STAGE 1</div>
+            <div class="step-lead">T-18 DAYS</div>
+            <div class="step-name">Regional Basin Risk</div>
+            <div class="step-pill badge-yellow" id="funnel-status-t18">Thermal Anomaly</div>
+          </div>
+          <div class="horizon-step stage-14d" id="funnel-card-t14" onclick="selectFunnelStage('t14_cyclogenesis')">
+            <div class="step-badge">STAGE 2</div>
+            <div class="step-lead">T-14 DAYS</div>
+            <div class="step-name">Cyclogenesis Probability</div>
+            <div class="step-pill badge-yellow" id="funnel-status-t14">68.5% Consensus</div>
+          </div>
+          <div class="horizon-step stage-7d" id="funnel-card-t7" onclick="selectFunnelStage('t7_system_id')">
+            <div class="step-badge">STAGE 3</div>
+            <div class="step-lead">T-7 DAYS</div>
+            <div class="step-name">System ID (BOB-06)</div>
+            <div class="step-pill badge-orange" id="funnel-status-t7">Depression T1.5</div>
+          </div>
+          <div class="horizon-step stage-3d active-stage" id="funnel-card-t3" onclick="selectFunnelStage('t3_track_intensity')">
+            <div class="step-badge">STAGE 4</div>
+            <div class="step-lead">T-3 DAYS (72h)</div>
+            <div class="step-name">Track & Intensity Cone</div>
+            <div class="step-pill badge-red" id="funnel-status-t3">RED ALERT (VSCS)</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Readout Strip -->
+        <div class="funnel-active-detail-bar" id="funnel-detail-bar">
+          <div class="funnel-detail-left">
+            <div class="funnel-detail-title-line">
+              <span id="funnel-detail-title">🎯 Stage 4 (T-3 Days Out / 72h): High-Resolution Track & Intensity Forecast</span>
+              <span class="badge badge-red" id="funnel-detail-alert-badge">RED ALERT — MANDATORY EVACUATION</span>
+            </div>
+            <div class="funnel-detail-action" id="funnel-detail-action">
+              ⚠️ <strong>OPERATIONAL ACTION:</strong> Mandatory evacuation of low-lying coastal populations within 5 km. Pre-positioning 18 NDRF and 24 ODRAF rescue teams.
+            </div>
+            <div class="funnel-detail-desc" id="funnel-detail-desc" style="display: none;">
+              By 3 days out (72 hours to landfall), the deep sequence physics-informed model generates high-resolution track waypoints, uncertainty cones, maximum sustained wind speeds (120 km/h gusting to 145 km/h), and coastal storm surge predictions.
+            </div>
+          </div>
+          <div class="funnel-detail-metrics" id="funnel-detail-metrics">
+            <div class="funnel-metric-box">
+              <div class="m-label">Classification</div>
+              <div class="m-val" style="color: var(--red-alert);" id="funnel-m-class">VSCS (Dana)</div>
+            </div>
+            <div class="funnel-metric-box">
+              <div class="m-label">Peak Winds</div>
+              <div class="m-val" id="funnel-m-wind">120-145 km/h</div>
+            </div>
+            <div class="funnel-metric-box">
+              <div class="m-label">Central Pressure</div>
+              <div class="m-val" id="funnel-m-pres">982.0 hPa</div>
+            </div>
+            <div class="funnel-metric-box">
+              <div class="m-label">Landfall ETA</div>
+              <div class="m-val" style="color: var(--red-alert-dark);" id="funnel-m-eta">12–14 Hours</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="gis-layout">
+        <!-- Map Column -->
+        <div>
+          <div class="panel-card" style="padding: 10px;">
+            <div class="panel-header" style="margin-bottom: 8px;">
+              <h2>Interactive Storm GIS Surveillance & 72h Forecast Cone</h2>
+              <div class="map-controls-toolbar">
+                <div class="segmented-control" role="group" aria-label="Map Display Layers">
+                  <button class="seg-btn active" id="btn-mode-cone" onclick="setMapVisualizationMode('cone')">Forecast Cone</button>
+                  <button class="seg-btn" id="btn-mode-swaths" onclick="setMapVisualizationMode('swaths')">Wind Swaths</button>
+                  <button class="seg-btn" id="btn-mode-both" onclick="setMapVisualizationMode('both')">Combined</button>
+                </div>
+                <div class="map-action-btns">
+                  <button class="btn btn-success btn-sm" id="btn-find-safe-route" onclick="findAndRenderSaferRoute()" title="Calculate surge-safe inland route to nearest available shelter">🧭 Find Safer Route</button>
+                  <button class="btn btn-primary btn-sm" id="btn-google-maps-route" onclick="openNearestShelterInGoogleMaps()" title="Take user's current GPS location and route to nearest shelter using Google Maps" style="background:#1A73E8; border-color:#1557B0; color:#FFF; font-weight:600;">🗺️ Google Maps</button>
+                  <button class="btn btn-secondary btn-sm" id="btn-toggle-lrs" onclick="toggleLocalRiskMapLayer()" title="Toggle District Local Risk Scores overlay on map">📊 Risk Scores</button>
+                  <button class="btn btn-secondary btn-sm" onclick="centerStormMap()" title="Center Eye on Map">📍 Center Eye</button>
+                  <button class="btn btn-secondary btn-sm" id="btn-toggle-basemap" onclick="toggleBasemapStyle()" title="Toggle Cartographic / Satellite Basemap">🗺️ Basemap</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="map-container">
+              <div id="cyclone-map"></div>
+              
+              <!-- Map Legend Overlay (Official IMD Symbology matching official charts) -->
+              <div class="map-overlay-legend">
+                <div style="font-weight: 700; margin-bottom: 5px; color: var(--goi-navy); border-bottom: 1px solid var(--border-light); padding-bottom: 2px;">OFFICIAL IMD HAZARD & TRACK LEGEND</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#22C55E; border: 1.5px solid #14532D;"></span> 72h Uncertainty Cone (IMD Model)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#22C55E; border: 1.5px solid #15803D;"></span> Hurricane Winds (&ge;64 KT / 120 km/h)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#3B82F6; border: 1.5px solid #1D4ED8;"></span> Storm Winds (50 - 63 KT / 90-117 km/h)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#94A3B8; border: 1.5px solid #4B5563;"></span> Gale Winds (34 - 49 KT / 62-90 km/h)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#DC2626; border-radius:50%; width:9px; height:9px;"></span> Forecast Track (IMD Waypoints)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#111827; border-radius:50%; width:9px; height:9px;"></span> Past Observed Track (&lt;34 KT)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#16A34A; width:9px; height:9px;"></span> Cyclone Shelter (Operational)</div>
+                <div class="legend-item"><span class="legend-symbol" style="background:#10B981; border-top: 3px dashed #047857;"></span> Surge-Safe Evacuation Corridor</div>
+              </div>
+            </div>
+
+            <!-- Dynamic Safer Route & Evacuation Guidance Panel -->
+            <div class="evacuation-guidance-card" id="evacuation-guidance-card" style="display: none;">
+              <div class="evac-card-header">
+                <div>
+                  <span class="badge badge-green" id="evac-safety-badge">CERTIFIED SURGE-SAFE CORRIDOR</span>
+                  <h3 style="margin-top: 4px; font-size: 14px;" id="evac-shelter-title">Safe Evacuation Route to Puri Zilla School Shelter</h3>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <a id="btn-evac-google-maps" href="https://maps.google.com" target="_blank" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; background: #1A73E8; border-color: #1557B0; color: #FFF; font-weight: 600; text-decoration: none;">
+                    🗺️ Open Turn-by-Turn in Google Maps
+                  </a>
+                  <button class="btn btn-secondary btn-sm" onclick="closeEvacuationRoute()">✖ Close Route</button>
+                </div>
+              </div>
+              <div class="evac-metrics-strip">
+                <div class="evac-metric-box">
+                  <span class="evac-label">Distance</span>
+                  <span class="evac-val" id="evac-dist">3.2 km</span>
+                </div>
+                <div class="evac-metric-box">
+                  <span class="evac-label">Walking ETA</span>
+                  <span class="evac-val" id="evac-walk-eta">38 Mins</span>
+                </div>
+                <div class="evac-metric-box">
+                  <span class="evac-label">Evac Bus ETA</span>
+                  <span class="evac-val" id="evac-vehicle-eta">9 Mins</span>
+                </div>
+                <div class="evac-metric-box">
+                  <span class="evac-label">Surge Risk</span>
+                  <span class="evac-val" style="color: var(--green-status);" id="evac-surge-status">Zero Inundation</span>
+                </div>
+                <div class="evac-metric-box">
+                  <span class="evac-label">Available Beds</span>
+                  <span class="evac-val" style="color: var(--goi-navy);" id="evac-avail-beds">720 Beds Free</span>
+                </div>
+              </div>
+              <div class="evac-steps-container" id="evac-turn-by-turn">
+                <!-- Populated dynamically via JS -->
+              </div>
+            </div>
+          </div>
+
+
+          <!-- District Risk Matrix Table -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Odisha Coastal District Vulnerability & Preparedness Matrix</h3>
+              <span class="badge badge-red">Active Landfall Zone</span>
+            </div>
+            <table class="govt-table" id="district-matrix-table">
+              <thead>
+                <tr>
+                  <th>District</th>
+                  <th>Local Risk Score (0-100)</th>
+                  <th>Severity Tier</th>
+                  <th>Wind Hazard (35%)</th>
+                  <th>Rain & Surge (35%)</th>
+                  <th>Population Exposure (30%)</th>
+                  <th>Distance to Eye</th>
+                  <th>Evacuation Directive</th>
+                </tr>
+              </thead>
+              <tbody id="district-matrix-body">
+                <!-- Populated via API -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Telemetry & Bulletin Sidebar Column -->
+        <div>
+          <!-- Real-Time Meteorological Telemetry -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Live Telemetry (IMD & AI Models)</h3>
+              <span class="badge badge-green" id="telemetry-source-badge">Live Feed</span>
+            </div>
+            <div class="telemetry-grid">
+              <div class="telemetry-cell">
+                <div class="label">System Name</div>
+                <div class="value" id="tel-storm-name">Cyclone Dana</div>
+                <div class="subtext">Bay of Bengal (NIO-06)</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="label">IMD Category</div>
+                <div class="value" id="tel-category" style="color: var(--red-alert);">VSCS</div>
+                <div class="subtext">Very Severe Cyclonic Storm</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="label">Sustained Wind</div>
+                <div class="value" id="tel-wind-speed">120 km/h</div>
+                <div class="subtext">65 kt | Gusts: 145 km/h</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="label">Central Pressure</div>
+                <div class="value" id="tel-pressure">982.0 hPa</div>
+                <div class="subtext">Pressure Deficit: -22 hPa</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="label">Current Coordinates</div>
+                <div class="value" id="tel-coords">18.42°N, 86.85°E</div>
+                <div class="subtext">140 km SE of Puri Coast</div>
+              </div>
+              <div class="telemetry-cell">
+                <div class="label">Motion Vector</div>
+                <div class="value" id="tel-motion">NNW (325°)</div>
+                <div class="subtext">Translational Speed: 16.5 km/h</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
+              <strong>Estimated Landfall:</strong> <span id="tel-landfall" style="color: var(--red-alert-dark); font-weight: 700;">Within 12-14 Hours (Puri-Dhamra corridor)</span>
+            </div>
+          </div>
+
+          <!-- Official Bulletin Text -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Official IMD Meteorological Bulletin</h3>
+              <button class="btn btn-secondary btn-sm" onclick="copyBulletinText()">Copy Text</button>
+            </div>
+            <div class="official-bulletin-box" id="bulletin-text-box">
+              Loading latest official IMD Cyclone Shield bulletin...
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+    </section>
+
+    <!-- =========================================================
+         VIEW 2: DUAL LOGIN (CITIZEN / AUTHORITY)
+         ========================================================= -->
+    <section id="view-login" class="app-view">
+      <div class="auth-box">
+        <div class="panel-header" style="text-align: center; border-bottom: 2px solid var(--goi-navy); margin-bottom: 16px;">
+          <h2 style="width: 100%;">CYCLONE SHIELD AI SECURE ACCESS</h2>
+        </div>
+        
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="auth-tab-citizen" onclick="switchAuthTab('citizen')">Citizen Login (Aadhaar)</button>
+          <button class="auth-tab-btn" id="auth-tab-authority" onclick="switchAuthTab('authority')">Authority / Responder Portal</button>
+        </div>
+
+        <!-- Citizen Form -->
+        <div id="form-citizen-login">
+          <div class="form-group">
+            <label for="citizen-aadhaar-input">Aadhaar Number (12 Digits):</label>
+            <input type="text" id="citizen-aadhaar-input" class="form-control" placeholder="e.g. 1234 1234 1234" maxlength="14" value="123412341234">
+            <div class="form-hint">
+              <strong>MVP Demo Account:</strong> Seeded with name <em>Amanullah</em> (Puri District, Risk Zone: High).
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="performCitizenLogin()">Authenticate Citizen Session</button>
+          <div style="margin-top: 10px; font-size: 11px; color: var(--text-light); text-align: center;">
+            * Production connects directly to UIDAI AUA/KUA Aadhaar verification.
+          </div>
+        </div>
+
+        <!-- Authority Form -->
+        <div id="form-authority-login" style="display: none;">
+          <div class="form-group">
+            <label for="auth-user-id">Authority User ID:</label>
+            <input type="text" id="auth-user-id" class="form-control" placeholder="User ID" value="admin_puri">
+          </div>
+          <div class="form-group">
+            <label for="auth-password">Password:</label>
+            <input type="password" id="auth-password" class="form-control" placeholder="Password" value="admin@puri">
+          </div>
+          <div style="font-size: 11px; margin-bottom: 12px; color: var(--text-muted);">
+            <strong>Demo Credentials:</strong><br>
+            • <code>admin_puri</code> / <code>admin@puri</code> (District Admin: Puri)<br>
+            • <code>forecaster_hq</code> / <code>imd@2026</code> (IMD Forecaster: Nationwide)<br>
+            • <code>ngo_puri</code> / <code>ngo@puri</code> (NGO Disaster Relief: Puri)
+          </div>
+          <button class="btn btn-primary" style="width: 100%;" onclick="performAuthorityLogin()">Sign In to Authority Console</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 3: CITIZEN DASHBOARD & SOS TRIGGER
+         ========================================================= -->
+    <section id="view-citizen" class="app-view">
+      
+      <!-- Citizen Profile & Risk Status -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <h2>Verified Citizen Emergency Dashboard</h2>
+          <span class="badge badge-red" id="citizen-risk-badge">HIGH RISK ZONE</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; font-size: 13px;">
+          <div><strong>Citizen Name:</strong> <span id="cit-profile-name">Amanullah</span></div>
+          <div><strong>Aadhaar Token:</strong> <span id="cit-profile-aadhaar">XXXX-XXXX-1234</span></div>
+          <div><strong>Registered District:</strong> <span id="cit-profile-district">Puri (Odisha)</span></div>
+          <div><strong>Mobile (Masked):</strong> <span id="cit-profile-mobile">XXXX-XXXX-9876</span></div>
+          <div><strong>Database RLS Status:</strong> <span class="badge badge-green">Enforced & Isolated</span></div>
+        </div>
+      </div>
+
+      <!-- Hyper-Localized Risk Assessment Panel (Local Risk Score) -->
+      <div class="panel-card lrs-card" id="citizen-lrs-card">
+        <div class="panel-header" style="border-bottom: 1px solid rgba(220, 38, 38, 0.2); margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="color: var(--goi-navy); font-size: 14px;">Hyper-Localized Multi-Hazard Risk Score (LRS)</h3>
+            <span class="badge badge-red" id="cit-lrs-badge">EXTREME RISK</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="recalculateCitizenRiskScore()" title="Recalculate risk score using live device GPS coordinates">
+            📍 Recalculate Live GPS Risk
+          </button>
+        </div>
+
+        <div class="lrs-grid">
+          <div class="lrs-score-display">
+            <div class="lrs-score-label">Composite Risk Index</div>
+            <div class="lrs-score-val" id="cit-lrs-score">92.4</div>
+            <div class="lrs-score-tier" id="cit-lrs-tier" style="color: var(--red-alert);">EXTREME HAZARD</div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;" id="cit-lrs-dist-info">
+              Puri Coastal Ward • 1.8 km to shore
+            </div>
+          </div>
+
+          <div class="lrs-factors-list">
+            <!-- Wind Hazard Factor -->
+            <div class="lrs-factor-item">
+              <div class="lrs-factor-header">
+                <span class="lrs-factor-name">💨 Wind Hazard Index (Holland Radial Vortex Decay)</span>
+                <span class="lrs-factor-weight">Weight: 35% | <strong id="cit-lrs-wind-val">94.2 / 100</strong></span>
+              </div>
+              <div class="lrs-progress-track">
+                <div class="lrs-progress-fill" id="cit-lrs-wind-bar" style="width: 94.2%; background: #DC2626;"></div>
+              </div>
+              <div class="lrs-factor-desc" id="cit-lrs-wind-desc">
+                Sustained winds: 120-145 km/h | Hurricane Gale force gusts expected at ground level
+              </div>
+            </div>
+
+            <!-- Rainfall & Surge Inundation Factor -->
+            <div class="lrs-factor-item">
+              <div class="lrs-factor-header">
+                <span class="lrs-factor-name">🌧️ Rainfall & Tidal Surge Factor (Inundation Exposure)</span>
+                <span class="lrs-factor-weight">Weight: 35% | <strong id="cit-lrs-rain-val">89.5 / 100</strong></span>
+              </div>
+              <div class="lrs-progress-track">
+                <div class="lrs-progress-fill" id="cit-lrs-rain-bar" style="width: 89.5%; background: #EA580C;"></div>
+              </div>
+              <div class="lrs-factor-desc" id="cit-lrs-rain-desc">
+                24h Projected Rain: 260 mm | Storm surge inundation: 2.8 - 3.2 meters above astronomical tide
+              </div>
+            </div>
+
+            <!-- Population Exposure & Vulnerability Factor -->
+            <div class="lrs-factor-item">
+              <div class="lrs-factor-header">
+                <span class="lrs-factor-name">👥 Population Exposure & Structural Vulnerability</span>
+                <span class="lrs-factor-weight">Weight: 30% | <strong id="cit-lrs-pop-val">93.0 / 100</strong></span>
+              </div>
+              <div class="lrs-progress-track">
+                <div class="lrs-progress-fill" id="cit-lrs-pop-bar" style="width: 93.0%; background: #DC2626;"></div>
+              </div>
+              <div class="lrs-factor-desc" id="cit-lrs-pop-desc">
+                Demographic density: 488 persons/km² | 42.5% kutcha dwellings within 2 km coastal band
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; padding: 8px 12px; background: rgba(220, 38, 38, 0.06); border-left: 3px solid #DC2626; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong>Operational Directive:</strong> <span id="cit-lrs-directive">Mandatory evacuation ordered for all low-lying coastal habitations. Seek designated concrete shelter immediately.</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-success btn-sm" onclick="findAndRenderSaferRoute()">🧭 Find Safe Route</button>
+            <button class="btn btn-primary btn-sm" onclick="openNearestShelterInGoogleMaps()" style="background:#1A73E8; border-color:#1557B0;">🗺️ Google Maps</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Large Emergency SOS Card -->
+      <div class="sos-banner-card">
+        <h2 style="color: var(--red-alert-dark); font-size: 20px;">🚨 EMERGENCY DISTRESS BROADCAST (SOS)</h2>
+        <p style="font-size: 13px; color: var(--text-main); max-width: 650px; margin: 6px auto;">
+          If you are stranded, cut off by floodwaters, or need urgent medical evacuation, click below. 
+          Your exact GPS location will be transmitted instantly to the District Emergency Operations Center (DEOC) and ODRAF teams under Row-Level Security.
+        </p>
+
+        <button class="sos-big-btn" id="btn-submit-sos" onclick="triggerCitizenSOS()">
+          <span>🆘</span> BROADCAST EMERGENCY SOS NOW
+        </button>
+
+        <div id="sos-feedback" style="font-size: 13px; font-weight: 700; margin-top: 6px; display: none;"></div>
+
+        <!-- SOS Status Lifecycle Tracker -->
+        <div class="sos-status-tracker" id="sos-tracker">
+          <div class="status-step active" id="step-pending">
+            <div class="status-bullet"></div>
+            1. PENDING (DEOC Received)
+          </div>
+          <div class="status-step" id="step-assigned">
+            <div class="status-bullet"></div>
+            2. RESPONDERS ASSIGNED
+          </div>
+          <div class="status-step" id="step-in_progress">
+            <div class="status-bullet"></div>
+            3. RESCUE IN PROGRESS
+          </div>
+          <div class="status-step" id="step-resolved">
+            <div class="status-bullet"></div>
+            4. SAFELY RESOLVED
+          </div>
+        </div>
+      </div>
+
+      <!-- My SOS History Table -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <h3>My Active Emergency Distress Requests</h3>
+          <button class="btn btn-secondary btn-sm" onclick="loadCitizenSOSHistory()">Refresh Status</button>
+        </div>
+        <table class="govt-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>District</th>
+              <th>GPS Coordinates</th>
+              <th>Broadcast Time</th>
+              <th>Current Status</th>
+              <th>Action Taken</th>
+            </tr>
+          </thead>
+          <tbody id="citizen-sos-history-body">
+            <tr><td colspan="6" style="text-align: center;">Loading SOS requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Nearest Capacity-Aware Shelters for Citizen -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <h3>Nearest Designated Cyclone Shelters in Puri District</h3>
+          <span class="badge badge-green">Capacity-Aware Allocation</span>
+        </div>
+        <table class="govt-table" id="citizen-shelter-table">
+          <thead>
+            <tr>
+              <th>Shelter Name</th>
+              <th>Location</th>
+              <th>Total Beds</th>
+              <th>Occupied</th>
+              <th>Available Capacity</th>
+              <th>Facilities</th>
+              <th>Emergency Contact</th>
+              <th>Surge-Safe Route</th>
+            </tr>
+          </thead>
+          <tbody id="citizen-shelter-body">
+            <!-- Populated via API -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Emergency Communication & Offline Access Panel (When Connectivity is Limited) -->
+      <div class="panel-card emergency-comm-card">
+        <div class="panel-header">
+          <h3>Emergency Communication & Offline Access (When Connectivity is Limited)</h3>
+          <span class="badge badge-yellow">2G / USSD / Offline Ready</span>
+        </div>
+        <div class="emergency-comm-grid">
+          <div class="comm-block">
+            <div class="comm-title">📲 Compact 2G SMS Emergency Protocol</div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px;">
+              When 4G/5G mobile internet drops during cyclone landfall, generate an ultra-compact standard 140-character GSM SMS distress beacon directly to the State Disaster Control Room (1077 / 112).
+            </p>
+            <div class="sms-preview-box" id="sms-preview-text">
+              SOS DANA | NAME: Amanullah | LOC: 19.8142,85.8312 | PURI | TRAPPED: 3 PERSONS | HIGH SURGE
+            </div>
+            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="sendCompact2GSMS()">
+                📨 Send via 2G SMS (112 / 1077)
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="copy2GSMS()">
+                📋 Copy SMS Text
+              </button>
+            </div>
+          </div>
+
+          <div class="comm-block">
+            <div class="comm-title">📞 USSD Emergency Quick-Dial & Audio Siren</div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px;">
+              Zero-internet USSD menu codes for basic 2G feature phones and high-decibel acoustic beacon for search & rescue teams.
+            </p>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+              <a href="tel:*112*1%23" class="btn btn-secondary btn-sm">📞 Dial *112*1# (Instant SOS)</a>
+              <a href="tel:*112*2*362%23" class="btn btn-secondary btn-sm">📞 Dial *112*2# (Shelter Status)</a>
+              <a href="tel:1077" class="btn btn-secondary btn-sm" style="color: var(--red-alert-dark); font-weight:700;">📞 Call Puri DEOC (1077)</a>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="openNearestShelterInGoogleMaps()" style="background:#1A73E8; border-color:#1557B0; color:#FFF; font-weight:600;">
+                🗺️ Route to Nearest Shelter via Google Maps (GPS)
+              </button>
+              <button class="btn btn-danger btn-sm" id="btn-sound-beacon" onclick="toggleAudibleDistressBeacon()">
+                🚨 Sound Acoustic Distress Beacon
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="downloadOfflineEmergencyPack()">
+                📥 Download Offline Safety Pack
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================
+         VIEW 4: AUTHORITIES PORTAL & DISPATCH CONSOLE
+         ========================================================= -->
+    <section id="view-authority" class="app-view">
+      
+      <!-- Authority Role Banner -->
+      <div class="panel-card" style="border-left: 4px solid var(--goi-navy);">
+        <div class="panel-header">
+          <h2>Disaster Emergency Operations Console (DEOC)</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="badge badge-navy" id="auth-badge-role">Role: district_admin</span>
+            <span class="badge badge-orange" id="auth-badge-scope">Scope: Puri District</span>
+          </div>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          * Security Notice: Row-Level Security policy <code>sos_authority_select</code> is actively enforced by PostgreSQL. This session is mathematically incapable of accessing distress calls outside your assigned district boundary.
+        </div>
+      </div>
+
+      <div class="auth-controls-grid">
+        <!-- SOS Dispatch Queue -->
+        <div>
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Live SOS Emergency Dispatch Queue</h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="loadAuthorityQueue()">Refresh Queue</button>
+              </div>
+            </div>
+            <table class="govt-table" id="auth-queue-table">
+              <thead>
+                <tr>
+                  <th>Citizen Name</th>
+                  <th>District</th>
+                  <th>Risk Zone</th>
+                  <th>GPS Coordinates</th>
+                  <th>Reported Time</th>
+                  <th>Status</th>
+                  <th>Action Control</th>
+                </tr>
+              </thead>
+              <tbody id="auth-queue-body">
+                <tr><td colspan="7" style="text-align: center;">Loading dispatch queue...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Operations Controls & Hindcast Rewind Time Slider -->
+        <div>
+          <!-- Hindcast Rewind Time (Slide 3 Specification) -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Hindcast Rewind Time</h3>
+              <span class="badge badge-navy" id="hindcast-lead-badge">Lead: 0h (Current Eye)</span>
+            </div>
+            <div class="hindcast-slider-wrap">
+              <input type="range" id="hindcast-slider" min="-18" max="72" step="6" value="0" style="width: 100%; cursor: pointer;" oninput="onHindcastSliderChange(this.value)">
+              <div class="slider-labels">
+                <span>T-18h (Past)</span>
+                <span>T-6h</span>
+                <span style="font-weight: 700; color: var(--red-alert);">T=0 (Now)</span>
+                <span>T+24h</span>
+                <span>T+72h (Forecast)</span>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+              Scrub timeline to inspect past satellite observations vs future physics-informed GRU model trajectories.
+            </div>
+          </div>
+
+          <!-- ML Pipeline Control -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>ML Pipeline & Ingestion Engine</h3>
+              <span class="badge badge-green">Worker Active</span>
+            </div>
+            <div style="font-size: 12px; margin-bottom: 10px;">
+              <div><strong>Active Architecture:</strong> CycloneInferencePipeline</div>
+              <div><strong>Frame Source:</strong> Historical Replay / MOSDAC INSAT-3DR</div>
+              <div><strong>Replay Frame Index:</strong> <span id="ml-replay-frame-idx">4</span></div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width: 100%; margin-bottom: 8px;" onclick="triggerManualMLCycle()">
+              ⚡ Trigger Next Replay Frame & Recompute Track
+            </button>
+            <div id="ml-trigger-msg" style="font-size: 11px; font-weight: 600; color: var(--green-status);"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================
+         VIEW 5: CAPACITY-AWARE SHELTERS DIRECTORY
+         ========================================================= -->
+    <section id="view-shelters" class="app-view">
+      <div class="panel-card">
+        <div class="panel-header">
+          <h2>Capacity-Aware Multi-Purpose Cyclone Shelters</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 12px; font-weight: 600;">Filter District:</label>
+            <select id="shelter-district-filter" class="form-control" style="width: 160px; padding: 4px;" onchange="loadSheltersView(this.value)">
+              <option value="">All Coastal Districts</option>
+              <option value="Puri">Puri</option>
+              <option value="Balasore">Balasore</option>
+              <option value="Jagatsinghpur">Jagatsinghpur</option>
+              <option value="Kendrapara">Kendrapara</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="govt-table" id="all-shelters-table">
+          <thead>
+            <tr>
+              <th>Shelter Name</th>
+              <th>District</th>
+              <th>GPS Coordinates</th>
+              <th>Total Capacity</th>
+              <th>Current Occupancy</th>
+              <th>Available Beds</th>
+              <th>Key Facilities</th>
+              <th>Control Room Helpline</th>
+              <th>Surge-Safe Route</th>
+            </tr>
+          </thead>
+          <tbody id="all-shelters-body">
+            <!-- Populated via API -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 6: SCOPED SAFE AI EMERGENCY CHATBOT
+         ========================================================= -->
+    <section id="view-chat" class="app-view">
+      <div class="panel-card" style="max-width: 800px; margin: 0 auto;">
+        <div class="panel-header">
+          <h2>Scoped Emergency Cyclone Response Assistant (AI Chatbot)</h2>
+          <span class="badge badge-green">Safe & Deterministic Guidance</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Ask questions about shelter locations, evacuation procedures, safety dos & don'ts, and storm landfall estimates.
+        </p>
+
+        <div class="chat-window">
+          <div class="chat-messages" id="chat-messages-container">
+            <div class="chat-bubble bot">
+              Namaste. I am the Cyclone Shield Emergency Response Assistant powered by Groq AI. How may I assist you with cyclone safety, shelter allocation, or evacuation protocols today?
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <input type="text" id="chat-input-field" class="form-control" placeholder="Type your query here (e.g. 'Where is the nearest shelter?', 'Safety precautions')..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn btn-primary" onclick="sendChatMessage()">Send Query</button>
+          </div>
+        </div>
+
+        <!-- Suggested Prompt Chips -->
+        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="sendSuggestedQuery('Where is the nearest shelter in Puri?')">🏠 Nearest shelter in Puri?</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendSuggestedQuery('When is landfall projected?')">⏳ Landfall timing?</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendSuggestedQuery('What precautions should I take?')">🛡️ Safety precautions</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendSuggestedQuery('How to call for emergency rescue SOS?')">🚨 How to broadcast SOS?</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SOS Confirmation Safeguard Modal Dialog -->
+  <div id="sos-confirm-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <div style="font-size: 40px; margin-bottom: 8px;">🚨</div>
+      <h2 style="color: var(--red-alert-dark); margin-bottom: 8px;">CONFIRM EMERGENCY SOS BROADCAST</h2>
+      <p style="font-size: 13px; color: var(--text-main); margin-bottom: 12px;">
+        You are about to transmit a high-priority distress beacon with your real GPS coordinates to the <strong>District Emergency Operations Center (DEOC)</strong> and NDRF rescue teams.
+      </p>
+      <div style="background: #FFF1F2; border: 1px solid #FECDD3; padding: 10px; font-size: 12px; text-align: left; margin-bottom: 16px;">
+        <div><strong>Citizen Name:</strong> <span id="modal-cit-name">Amanullah</span></div>
+        <div><strong>District:</strong> <span id="modal-cit-district">Puri (Odisha)</span></div>
+        <div><strong>GPS Location:</strong> <span id="modal-cit-coords">Acquiring live telemetry...</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeSOSModal()">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-sos" onclick="executeConfirmedSOS()">
+          Transmit SOS Beacon Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Official Government Footer -->
+  <footer class="goi-footer">
+    <div class="footer-container">
+      <div>
+        <strong>Cyclone Shield AI</strong> — Smart India Hackathon (SIH 2026) | Problem Statement 26070 | Team 36: Hexaminds<br>
+        Developed for Ministry of Earth Sciences (IMD) & National Disaster Management Authority (NDMA).
+      </div>
+      <div>
+        Official Portal Aesthetic strictly compliant with Government of India Guidelines.<br>
+        PostgreSQL Row-Level Security (RLS) Active.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>

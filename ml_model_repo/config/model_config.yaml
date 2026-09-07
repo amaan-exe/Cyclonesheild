@@ -1,0 +1,113 @@
+# ============================================================================
+# Cyclone Horizon — Model Configurations
+# ============================================================================
+
+# --- Track & Intensity Prediction (LSTM/GRU) ---
+prediction:
+  model_type: "gru"  # "lstm" | "gru" | "transformer"
+  input_features:
+    - "lat"
+    - "lon"
+    - "max_wind_kt"
+    - "min_pressure_hpa"
+    - "sst"
+    - "shear_magnitude"
+    - "storm_speed_kph"
+    - "storm_bearing_deg"
+    - "time_since_genesis_hours"
+    - "delta_wind_6h"
+    - "delta_pressure_6h"
+  
+  output_features:
+    - "delta_lat"
+    - "delta_lon"
+    - "max_wind_kt"
+    - "min_pressure_hpa"
+  
+  architecture:
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.3
+    bidirectional: false  # causal for prediction
+    probabilistic: true   # predict mean + log_variance for uncertainty cone
+  
+  training:
+    batch_size: 32
+    epochs: 100
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    lr_scheduler: "cosine"
+    early_stopping_patience: 15
+    gradient_clip: 1.0
+    swa_start_epoch: 70   # stochastic weight averaging
+  
+  sequence:
+    input_steps: 8     # past 24h at 3h intervals
+    output_steps: 8    # predict next 24h at 3h intervals
+
+# --- Pattern / Intensity Classification (CNN) ---
+classification:
+  backbone: "efficientnet_b3"  # fits in 6GB VRAM
+  pretrained: true
+  
+  heads:
+    pattern:
+      num_classes: 5  # curved_band, shear, eye, cdo, embedded_center
+      loss: "focal"
+      focal_gamma: 2.0
+      focal_alpha: null  # auto-computed from class frequencies
+    
+    t_number:
+      output_dim: 1    # regression: 1.0 - 8.0
+      loss: "mse"
+    
+    intensity:
+      num_classes: 8   # IMD 8-category scale
+      loss: "focal"
+      focal_gamma: 2.0
+      label_smoothing: 0.1
+  
+  multi_task_weights:
+    pattern: 1.0
+    t_number: 0.5
+    intensity: 1.0
+  
+  training:
+    batch_size: 16    # constrained by 6GB VRAM
+    epochs: 80
+    learning_rate: 0.0001  # lower LR for fine-tuning
+    weight_decay: 0.0001
+    lr_scheduler: "cosine_warmup"
+    warmup_epochs: 5
+    early_stopping_patience: 12
+    
+    # progressive resizing
+    progressive_resize:
+      enabled: true
+      stages:
+        - size: 112
+          epochs: 20
+        - size: 224
+          epochs: 60
+
+# --- Detection (U-Net Segmentation) ---
+detection:
+  backbone: "resnet34"
+  pretrained: true
+  num_classes: 2       # background, cyclonic_region
+  
+  training:
+    batch_size: 8
+    epochs: 60
+    learning_rate: 0.0003
+    loss: "dice_focal"  # combined Dice + Focal loss
+
+# --- XGBoost Hybrid Classifier ---
+xgboost_hybrid:
+  n_estimators: 500
+  max_depth: 6
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+  eval_metric: "mlogloss"
+  early_stopping_rounds: 30
