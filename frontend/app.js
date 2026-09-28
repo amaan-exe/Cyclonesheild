@@ -628,11 +628,11 @@ function renderStormOnMap(advisory) {
     });
     state.mapLayers.stormEye = L.marker([cur.lat, cur.lon], { icon: buoyIcon }).addTo(state.map);
     state.mapLayers.stormEye.bindTooltip(
-      `<strong>North Indian Ocean Basin Surveillance</strong><br>Sector: ${cur.lat}°N, ${cur.lon}°E<br>Wind: ${cur.max_wind_kph} km/h (${cur.max_wind_kt} kt)<br>MSLP: ${cur.min_pressure_hpa} hPa<br><span style="color:#10B981; font-weight:700;">ALL CLEAR — ZERO CYCLONES ACTIVE</span>`,
-      { permanent: true, direction: 'top', className: 'imd-track-label' }
+      `<strong>🛰️ North Indian Ocean Surveillance</strong><br>Sector: ${cur.lat}°N, ${cur.lon}°E (Offshore Bay of Bengal)<br>Surface Wind: <b>${cur.max_wind_kph} km/h</b> (${cur.max_wind_kt} kt)<br>MSLP: <b>${cur.min_pressure_hpa} hPa</b><br><span style="color:#34D399; font-weight:700;">🟢 ALL CLEAR — ZERO CYCLONES ACTIVE</span>`,
+      { permanent: true, direction: 'bottom', offset: [0, 10], className: 'surveillance-tooltip-card' }
     );
     if (!state.userHasPanned) {
-      state.map.setView([19.5, 87.0], 6);
+      state.map.setView([17.0, 86.0], 5);
     }
     return;
   }
@@ -1277,11 +1277,22 @@ function updateTelemetryUI(advisory) {
   const stripWind = document.getElementById('strip-wind');
   if (stripWind) stripWind.innerText = isSurveillance ? `${cur.max_wind_kph} km/h (${cur.max_wind_kt} kt)` : `${cur.max_wind_kph} km/h (Gusts: 145)`;
 
-  animateLiveWeather(
-    { lat: Number(cur.lat), lon: Number(cur.lon) },
-    Number(cur.min_cloud_top_temp_k || 230),
-    Number(cur.max_wind_kt || 0)
-  );
+  if (!isSurveillance) {
+    animateLiveWeather(
+      { lat: Number(cur.lat), lon: Number(cur.lon) },
+      Number(cur.min_cloud_top_temp_k || 230),
+      Number(cur.max_wind_kt || 0)
+    );
+  } else {
+    if (state.liveWeatherTimer) {
+      clearInterval(state.liveWeatherTimer);
+      state.liveWeatherTimer = null;
+    }
+    (state.mapLayers.liveCloudAnimation || []).forEach(l => state.map.removeLayer(l));
+    (state.mapLayers.liveWindAnimation || []).forEach(l => state.map.removeLayer(l));
+    state.mapLayers.liveCloudAnimation = [];
+    state.mapLayers.liveWindAnimation = [];
+  }
 }
 
 function updateDistrictMatrix(matrix) {
