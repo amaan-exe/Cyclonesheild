@@ -19,7 +19,3 @@ pandas>=2.2.0
 scikit-learn>=1.4.0
 joblib>=1.3.0
 requests>=2.31.0
-
-# Deep Learning (CPU-friendly for standard cloud instances)
-torch>=2.2.0
-torchvision>=0.17.0
