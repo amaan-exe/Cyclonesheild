@@ -77,6 +77,7 @@ outputs/
 *.npy
 *.npz
 !mosdac_data/insat3ds_calibrated_frame.npz
+!backend/insat3ds_calibrated_frame.npz
 *.nc
 *.nc4
 *.h5

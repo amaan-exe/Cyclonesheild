@@ -197,7 +197,19 @@ class MOSDACLiveClient:
             found_h5 = list(repo_mosdac.glob("**/*.h5"))
             if found_h5:
                 self.hdf5_path = str(found_h5[0])
-        if not self.hdf5_path or not Path(self.hdf5_path).exists():
+        candidate_dirs = [
+            Path(__file__).resolve().parent / "insat3ds_calibrated_frame.npz",
+            Path(__file__).resolve().parent.parent / "mosdac_data" / "insat3ds_calibrated_frame.npz",
+            Path.cwd() / "mosdac_data" / "insat3ds_calibrated_frame.npz",
+            Path.cwd() / "backend" / "insat3ds_calibrated_frame.npz",
+            Path("mosdac_data/insat3ds_calibrated_frame.npz"),
+            Path("backend/insat3ds_calibrated_frame.npz")
+        ]
+        for cp in candidate_dirs:
+            if cp.exists():
+                self.npz_path = str(cp)
+                break
+        if not self.npz_path:
             found_npz = list(repo_mosdac.glob("**/*calibrated*.npz"))
             if found_npz:
                 self.npz_path = str(found_npz[0])
