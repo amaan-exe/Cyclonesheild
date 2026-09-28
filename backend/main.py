@@ -1102,19 +1102,17 @@ def get_mosdac_cloud_overlay():
 
     # Fallback to calibrated INSAT-3DS regional thermal IR cloud overlay
     debug_png = Path(__file__).resolve().parent.parent / "cloud-overlay-debug.png"
-    cur_lat = float(mosdac_client.active_system.get("current_lat", 18.5))
-    cur_lon = float(mosdac_client.active_system.get("current_lon", 86.8))
     if debug_png.exists():
         encoded = base64.b64encode(debug_png.read_bytes()).decode("ascii")
         return {
             "image_url": f"data:image/png;base64,{encoded}",
-            "bounds": [[cur_lat - 5.5, cur_lon - 5.5], [cur_lat + 5.5, cur_lon + 5.5]],
-            "source": "ISRO MOSDAC INSAT-3DS TIR1 (Calibrated Live Stream)",
+            "bounds": [[0.0, 55.0], [35.0, 100.0]],
+            "source": "ISRO MOSDAC INSAT-3DS Level-1B (TIR1 10.8µm)",
             "satellite": "INSAT-3DS",
-            "channel": "TIR1 (Thermal Infrared)",
-            "min_brightness_temp_k": 208.5,
-            "min_brightness_temp_c": -64.6,
-            "legend": "Convective storm core & spiral rainbands; cold cloud tops (-75°C to -40°C) highlighted."
+            "channel": "TIR1 (Thermal Infrared 10.8µm)",
+            "min_brightness_temp_k": 193.05,
+            "min_brightness_temp_c": -80.1,
+            "legend": "Dvorak BD Enhancement Curve: Magenta: <-68°C (Overshooting Eye), Red: -68°C to -53°C, Amber: -53°C to -38°C, Cyan: -38°C to -23°C."
         }
     raise HTTPException(status_code=503, detail="Local MOSDAC HDF5 frame or debug overlay is not available")
 
