@@ -451,7 +451,9 @@ class CycloneInferencePipeline:
         # Get motion from recent history
         if len(track_history) >= 2:
             prev = track_history.iloc[-2]
-            dt_h = max(1.0, (latest["timestamp"] - prev["timestamp"]).total_seconds() / 3600)
+            ts_latest = pd.to_datetime(latest["timestamp"]) if not isinstance(latest["timestamp"], pd.Timestamp) else latest["timestamp"]
+            ts_prev = pd.to_datetime(prev["timestamp"]) if not isinstance(prev["timestamp"], pd.Timestamp) else prev["timestamp"]
+            dt_h = max(1.0, (ts_latest - ts_prev).total_seconds() / 3600)
             calc_spd = haversine_distance(prev["lat"], prev["lon"], lat, lon) / dt_h
             calc_brng = bearing(prev["lat"], prev["lon"], lat, lon)
             speed = latest.get("storm_speed_kph")
