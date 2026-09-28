@@ -1101,19 +1101,26 @@ def get_mosdac_cloud_overlay():
             pass
 
     # Fallback to calibrated INSAT-3DS regional thermal IR cloud overlay
-    debug_png = Path(__file__).resolve().parent.parent / "cloud-overlay-debug.png"
-    if debug_png.exists():
-        encoded = base64.b64encode(debug_png.read_bytes()).decode("ascii")
-        return {
-            "image_url": f"data:image/png;base64,{encoded}",
-            "bounds": [[0.0, 55.0], [35.0, 100.0]],
-            "source": "ISRO MOSDAC INSAT-3DS Level-1B (TIR1 10.8µm)",
-            "satellite": "INSAT-3DS",
-            "channel": "TIR1 (Thermal Infrared 10.8µm)",
-            "min_brightness_temp_k": 193.05,
-            "min_brightness_temp_c": -80.1,
-            "legend": "Dvorak BD Enhancement Curve: Magenta: <-68°C (Overshooting Eye), Red: -68°C to -53°C, Amber: -53°C to -38°C, Cyan: -38°C to -23°C."
-        }
+    search_paths = [
+        Path(__file__).resolve().parent.parent / "cloud-overlay-debug.png",
+        Path(__file__).resolve().parent / "cloud-overlay-debug.png",
+        Path(__file__).resolve().parent.parent / "mosdac_data" / "cloud-overlay-debug.png",
+        Path.cwd() / "cloud-overlay-debug.png",
+        Path("cloud-overlay-debug.png")
+    ]
+    for p in search_paths:
+        if p.exists():
+            encoded = base64.b64encode(p.read_bytes()).decode("ascii")
+            return {
+                "image_url": f"data:image/png;base64,{encoded}",
+                "bounds": [[0.0, 55.0], [35.0, 100.0]],
+                "source": "ISRO MOSDAC INSAT-3DS Level-1B (TIR1 10.8µm)",
+                "satellite": "INSAT-3DS",
+                "channel": "TIR1 (Thermal Infrared 10.8µm)",
+                "min_brightness_temp_k": 193.05,
+                "min_brightness_temp_c": -80.1,
+                "legend": "Dvorak BD Enhancement Curve: Magenta: <-68°C (Overshooting Eye), Red: -68°C to -53°C, Amber: -53°C to -38°C, Cyan: -38°C to -23°C."
+            }
     raise HTTPException(status_code=503, detail="Local MOSDAC HDF5 frame or debug overlay is not available")
 
 LIVE_DETECTED_SYNOPTIC_SYSTEMS = [

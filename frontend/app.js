@@ -849,9 +849,15 @@ function renderStormOnMap(advisory) {
     });
   }
 
-  // Focus regional view on Bay of Bengal & East Coast of India (matching IMD chart perspective)
+  // Focus view to perfectly frame the storm and its 72h forecast cone
   if (fullTrajectory.length >= 2 && !state.userHasPanned) {
-    state.map.setView([20.2, 85.6], 6);
+    const lats = fullTrajectory.map(p => p.lat);
+    const lons = fullTrajectory.map(p => p.lon);
+    const bounds = L.latLngBounds(
+      [Math.min(...lats) - 1.5, Math.min(...lons) - 1.5],
+      [Math.max(...lats) + 1.5, Math.max(...lons) + 1.5]
+    );
+    state.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 6 });
   }
 
   // Radar Doppler precipitation buffer
