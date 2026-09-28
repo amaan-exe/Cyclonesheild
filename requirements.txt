@@ -2,6 +2,11 @@
 # Cyclone Shield AI — Production Python Dependencies
 # ============================================================
 
+# Deep Learning Framework (CPU-only build for cloud memory limits)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.2.0
+torchvision>=0.17.0
+
 # Web Server & API Framework
 fastapi>=0.110.0
 uvicorn[standard]>=0.28.0

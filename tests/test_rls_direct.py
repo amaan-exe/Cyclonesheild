@@ -1,17 +1,9 @@
 import psycopg2
 import psycopg2.extras
-
-DB_CONFIG = {
-    "dbname": "postgres",
-    "user": "cyclone_app",
-    "password": "cyclone_secure_pass",
-    "host": "127.0.0.1",
-    "port": 5433
-}
-
+from backend.database.db import get_pool
 
 def get_conn():
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_pool().getconn()
     conn.autocommit = False
     return conn
 

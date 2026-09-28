@@ -191,14 +191,19 @@ class MOSDACLiveClient:
         self.api_token = os.environ.get("MOSDAC_API_TOKEN", "")
         self.api_url = os.environ.get("MOSDAC_API_URL", "").strip()
         self.hdf5_path = os.environ.get("MOSDAC_HDF5_PATH", "").strip()
+        self.npz_path = ""
+        repo_mosdac = Path(__file__).resolve().parent.parent / "mosdac_data"
         if not self.hdf5_path or not Path(self.hdf5_path).exists():
-            repo_mosdac = Path(__file__).resolve().parent.parent / "mosdac_data"
             found_h5 = list(repo_mosdac.glob("**/*.h5"))
             if found_h5:
                 self.hdf5_path = str(found_h5[0])
+        if not self.hdf5_path or not Path(self.hdf5_path).exists():
+            found_npz = list(repo_mosdac.glob("**/*calibrated*.npz"))
+            if found_npz:
+                self.npz_path = str(found_npz[0])
         self.live_enabled = (
             os.environ.get("MOSDAC_LIVE_MODE", "true").lower() == "true" and
-            bool(self.api_url or self.hdf5_path)
+            bool(self.api_url or self.hdf5_path or self.npz_path)
         )
         self.request_timeout_seconds = int(os.environ.get("MOSDAC_TIMEOUT_SECONDS", "30"))
         self.last_error = None
@@ -400,8 +405,16 @@ class MOSDACLiveClient:
         Fetches or simulates the latest live calibrated radiance frame from MOSDAC
         focusing on the Bay of Bengal system approaching Odisha.
         """
-        if self.live_enabled:
-            return self._fetch_local_hdf5_scene() if self.hdf5_path else self._fetch_live_scene()
+        # If a specific synoptic cyclone replay or interactive radar feed was selected by user, run it
+        if self.active_feed_id in INDIAN_OCEAN_FEEDS and self.active_feed_id != "live_nio_surveillance":
+            pass
+        elif self.live_enabled:
+            if self.hdf5_path and Path(self.hdf5_path).exists():
+                return self._fetch_local_hdf5_scene()
+            elif self.npz_path and Path(self.npz_path).exists():
+                return self._fetch_local_npz_scene()
+            elif self.api_url:
+                return self._fetch_live_scene()
 
         now = datetime.datetime.now(datetime.timezone.utc)
         self.last_sync_time = now
@@ -492,6 +505,60 @@ class MOSDACLiveClient:
             }
         }
         return scene
+
+    def _fetch_local_npz_scene(self) -> Dict[str, Any]:
+        """Extract a calibrated INSAT-3DS TIR1 observation from compressed numpy cache (cloud-deployment friendly)."""
+        data = np.load(self.npz_path)
+        center_lat = float(data["center_lat"])
+        center_lon = float(data["center_lon"])
+        min_temp = float(data["min_temp"])
+        detector_image = data["detector_image"]
+        frame_id = Path(self.npz_path).stem
+
+        wind_kt = float(np.clip(25.0 + max(0.0, 235.0 - min_temp) * 0.42, 25.0, 95.0))
+        pressure_hpa = float(1010.0 - wind_kt * 0.35)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        self.last_sync_time = now
+        self.sync_counter += 1
+        self.active_system.update({
+            "system_id": frame_id,
+            "name": "INSAT-3DS TIR1 live observation",
+            "current_lat": center_lat,
+            "current_lon": center_lon,
+            "current_wind_kt": round(wind_kt, 1),
+            "current_wind_kph": round(wind_kt * 1.852, 1),
+            "central_pressure_hpa": round(pressure_hpa, 1),
+            "min_cloud_temp_k": round(min_temp, 1),
+            "dvorak_t_number": "satellite proxy",
+            "is_cyclone": True
+        })
+        return {
+            "source": f"ISRO MOSDAC ({self.satellite} {self.channel})",
+            "frame_id": frame_id,
+            "timestamp": now.isoformat(),
+            "coverage_sector": "North Indian Ocean (Bay of Bengal)",
+            "sensor": "INSAT-3DS IMAGER",
+            "calibration_formula": "IMG_TIR1_TEMP lookup table",
+            "nadir_resolution_km": 4.0,
+            "target_system": "INSAT-3DS TIR1 live observation",
+            "detected_vortex": {
+                "center_lat": center_lat,
+                "center_lon": center_lon,
+                "min_brightness_temp_k": round(min_temp, 1),
+                "min_brightness_temp_c": round(min_temp - 273.15, 1),
+                "eyewall_diameter_km": 28.0,
+                "central_dense_overcast_radius_km": 190.0,
+                "dvorak_t_number": "satellite proxy",
+                "estimated_wind_kt": round(wind_kt, 1),
+                "estimated_wind_kph": round(wind_kt * 1.852, 1),
+                "central_pressure_hpa": round(pressure_hpa, 1),
+                "heading_bearing_deg": self.active_system["bearing_deg"],
+                "forward_speed_kph": self.active_system["forward_speed_kph"],
+                "is_cyclone": True
+            },
+            "observation_quality": "TIR1 calibrated satellite observation",
+            "detector_image": detector_image
+        }
 
     def _fetch_local_hdf5_scene(self) -> Dict[str, Any]:
         """Extract a current INSAT TIR1 observation from a downloaded HDF5 frame."""
