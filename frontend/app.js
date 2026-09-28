@@ -603,6 +603,16 @@ function renderStormOnMap(advisory) {
   (state.mapLayers.windRadii || []).forEach(r => state.map.removeLayer(r));
   state.mapLayers.windRadii = [];
 
+  // Clear weather animation and timers from previous fix
+  if (state.liveWeatherTimer) {
+    clearInterval(state.liveWeatherTimer);
+    state.liveWeatherTimer = null;
+  }
+  (state.mapLayers.liveCloudAnimation || []).forEach(l => state.map.removeLayer(l));
+  (state.mapLayers.liveWindAnimation || []).forEach(l => state.map.removeLayer(l));
+  state.mapLayers.liveCloudAnimation = [];
+  state.mapLayers.liveWindAnimation = [];
+
   const cur = advisory.current_state;
 
   // If in routine surveillance mode (No active cyclone in Indian Ocean)

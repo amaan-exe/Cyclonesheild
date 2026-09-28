@@ -225,8 +225,8 @@ class MOSDACLiveClient:
         self.last_sync_time = datetime.datetime.now(datetime.timezone.utc)
         self.sync_counter = 1
         
-        # Active feed selector: default to live real-time surveillance
-        self.active_feed_id = os.environ.get("DEFAULT_FEED_SOURCE", "live_nio_surveillance")
+        # Active feed selector: default to active Cyclone DANA approaching Odisha
+        self.active_feed_id = os.environ.get("DEFAULT_FEED_SOURCE", "cyclone_dana_2024")
         self.replay_step_index = 3  # Start at mature fix for replay feeds
 
         # Initialize active system based on chosen feed
