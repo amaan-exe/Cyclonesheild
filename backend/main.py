@@ -1686,3 +1686,9 @@ frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fr
 if os.path.isdir(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    print(f"Starting Cyclone Shield AI on 0.0.0.0:{port}")
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port)
+
