@@ -12,6 +12,7 @@ from .detection.vortex_detector import CycloneVortexDetector, CenterFixResult
 from .classification.pattern_classifier import CycloneClassifier, MultiTaskLoss
 from .classification.intensity_hybrid import HybridIntensityClassifier
 from .prediction.hybrid_predictor import HybridCyclonePredictor, BetaAdvectionModel
+from .prediction.cyclogenesis_predictor import CyclogenesisPredictor, CyclogenesisPredictionResult, CyclogenesisDiagnostics
 from .rl_correction.cyclone_env import CycloneForecastEnv, HistoricalEpisode
 from .rl_correction.correction_agent import RLForecastCorrectionAgent
 
@@ -23,6 +24,9 @@ __all__ = [
     "HybridIntensityClassifier",
     "HybridCyclonePredictor",
     "BetaAdvectionModel",
+    "CyclogenesisPredictor",
+    "CyclogenesisPredictionResult",
+    "CyclogenesisDiagnostics",
     "CycloneForecastEnv",
     "HistoricalEpisode",
     "RLForecastCorrectionAgent"

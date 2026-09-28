@@ -11,9 +11,18 @@ import math
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+    _BaseModule = nn.Module
+except Exception:
+    torch = None
+    nn = None
+    F = None
+    TORCH_AVAILABLE = False
+    _BaseModule = object
 
 
 class BetaAdvectionModel:
@@ -61,7 +70,7 @@ class BetaAdvectionModel:
         return float(dlat), float(dlon)
 
 
-class HybridCyclonePredictor(nn.Module):
+class HybridCyclonePredictor(_BaseModule):
     """
     Physics-Informed Hybrid Sequence Predictor.
     Blends temporal GRU attention with the Beta-Advection steering model.
@@ -76,12 +85,17 @@ class HybridCyclonePredictor(nn.Module):
         dropout: float = 0.25,
         probabilistic: bool = True
     ):
-        super().__init__()
+        if TORCH_AVAILABLE:
+            super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.hidden_dim = hidden_dim
         self.probabilistic = probabilistic
         self.bam = BetaAdvectionModel()
+
+        if not TORCH_AVAILABLE:
+            self.input_proj = None
+            return
 
         # Input feature projection
         self.input_proj = nn.Sequential(

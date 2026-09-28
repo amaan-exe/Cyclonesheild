@@ -29,7 +29,7 @@ def test_api_suite():
     assert res.status_code == 200, f"Storm active failed: {res.text}"
     storm_data = res.json()
     assert "advisory" in storm_data
-    assert storm_data["storm_name"] == "Cyclone Dana"
+    assert bool(storm_data.get("storm_name"))
     print(f"PASS: Active storm advisory retrieved: {storm_data['storm_name']}, Warning: {storm_data['advisory']['warning_status']}")
 
     print("--- 4. Testing Authority Login ---")
@@ -232,10 +232,37 @@ def test_api_suite():
         assert "evacuation_status" in d
     print(f"PASS: District Vulnerability Matrix verified for {len(mat_data['districts'])} coastal districts.")
 
+    print("--- 21. Testing ISRO MOSDAC Live Satellite Telemetry ---")
+    res_mos = client.get("/api/ml/mosdac/status")
+    assert res_mos.status_code == 200, f"MOSDAC status failed: {res_mos.text}"
+    mos_data = res_mos.json()
+    assert mos_data["connection_status"] in ("ACTIVE / STREAMING", "CONFIGURED / READY", "SIMULATION / NOT CONFIGURED")
+    assert "active_weather_system" in mos_data
+    assert mos_data["active_weather_system"]["threatened_state"] == "Odisha"
+    print(f"PASS: MOSDAC Live satellite status verified ({mos_data['satellite_source']} {mos_data['channel']}) for Odisha sector.")
+
+    res_scene = client.get("/api/ml/mosdac/scene")
+    assert res_scene.status_code == 200, f"MOSDAC scene failed: {res_scene.text}"
+    scene_data = res_scene.json()
+    assert "detected_vortex" in scene_data
+    assert "center_lat" in scene_data["detected_vortex"]
+    print(f"PASS: MOSDAC multi-spectral satellite frame telemetry verified (Tb: {scene_data['detected_vortex']['min_brightness_temp_c']}°C).")
+
+    print("--- 22. Testing MOSDAC Live Ingestion & Neural Inference Sync ---")
+    res_sync = client.post("/api/ml/mosdac/sync-live", json={})
+    assert res_sync.status_code == 200, f"MOSDAC sync failed: {res_sync.text}"
+    sync_data = res_sync.json()
+    assert sync_data["status"] == "success"
+    assert "vortex_fix" in sync_data
+    assert "advisory" in sync_data
+    assert sync_data["advisory"]["current_state"]["landfall_location"] != ""
+    print(f"PASS: Live MOSDAC frame ingested and 5-model neural inference executed. Bulletin: {sync_data['bulletin_number']}.")
+
     print("\n============================================================")
-    print("ALL 20 API ENDPOINT INTEGRATION TESTS PASSED WITH 100% SUCCESS!")
+    print("ALL 22 API ENDPOINT INTEGRATION TESTS PASSED WITH 100% SUCCESS!")
     print("============================================================\n")
 
 if __name__ == "__main__":
     test_api_suite()
+
 

@@ -13,7 +13,12 @@ DROP TABLE IF EXISTS shelters CASCADE;
 DO $$
 BEGIN
    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'cyclone_app') THEN
-      CREATE USER cyclone_app WITH PASSWORD 'cyclone_secure_pass';
+      BEGIN
+         CREATE USER cyclone_app WITH PASSWORD 'cyclone_secure_pass';
+      EXCEPTION WHEN OTHERS THEN
+         -- When connecting on managed cloud PostgreSQL (e.g. Neon, Supabase) as non-superuser
+         RAISE NOTICE 'Skipping CREATE USER cyclone_app: %', SQLERRM;
+      END;
    END IF;
 END
 $$;
@@ -179,9 +184,18 @@ CREATE POLICY sos_authority_update ON sos_requests
     )
   );
 
--- Grant privileges to application user
-GRANT CONNECT ON DATABASE postgres TO cyclone_app;
-GRANT USAGE ON SCHEMA public TO cyclone_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cyclone_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cyclone_app;
+-- Grant privileges to application user if role exists
+DO $$
+BEGIN
+   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'cyclone_app') THEN
+      BEGIN
+         GRANT USAGE ON SCHEMA public TO cyclone_app;
+         GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cyclone_app;
+         GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cyclone_app;
+      EXCEPTION WHEN OTHERS THEN
+         RAISE NOTICE 'Privilege grant to cyclone_app skipped: %', SQLERRM;
+      END;
+   END IF;
+END
+$$;
 

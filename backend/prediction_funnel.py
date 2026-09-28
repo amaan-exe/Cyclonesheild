@@ -14,9 +14,11 @@ physics-constrained early warning funnel:
 import datetime
 from typing import Dict, Any, List
 
+import os
+
 class PredictionFunnelService:
     def __init__(self):
-        self.active_storm_name = "Cyclone Dana"
+        self.active_storm_name = os.environ.get("ACTIVE_CYCLONE_NAME", "Cyclone Shakti")
         self.current_operational_stage = "t3_track_intensity"
 
     def get_all_stages(self) -> Dict[str, Any]:

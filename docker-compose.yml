@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cyclone_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cyclonedb
+      POSTGRES_USER: cyclone_app
+      POSTGRES_PASSWORD: cyclone_secure_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_docker:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyclone_app -d cyclonedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: cyclone_web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://cyclone_app:cyclone_secure_pass@db:5432/cyclonedb
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=cyclonedb
+      - DB_USER=cyclone_app
+      - DB_PASS=cyclone_secure_pass
+      - JWT_SECRET=cyclone_horizon_sih2026_super_secret_key_987654321
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m backend.database.seed &&
+             uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata_docker:

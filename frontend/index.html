@@ -93,12 +93,66 @@
     </div>
   </nav>
 
+  <!-- North Indian Ocean Live Feed & Prediction Model Control Bar -->
+  <section class="nio-feed-bar" id="nio-feed-bar">
+    <div class="nio-feed-container">
+      <div class="nio-feed-left">
+        <span class="nio-basin-tag">
+          <span class="pulse-indicator-emerald" id="feed-live-dot"></span>
+          <span id="feed-basin-label">NORTH INDIAN OCEAN (BAY OF BENGAL & ARABIAN SEA)</span>
+        </span>
+        <div class="nio-select-wrapper">
+          <label for="select-ocean-feed" class="nio-feed-label">DATA FEED / MODEL MODE:</label>
+          <select id="select-ocean-feed" class="nio-feed-select" onchange="handleFeedSourceChange(this.value)">
+            <option value="live_nio_surveillance">🟢 Live Real-Time Feed (Today: Routine Surveillance — All Clear)</option>
+            <option value="cyclone_dana_2024">🌀 Live Model Prediction: Cyclone DANA (Bay of Bengal / Odisha)</option>
+            <option value="cyclone_biparjoy_2023">🌀 Live Model Prediction: Cyclone BIPARJOY (Arabian Sea / Gujarat)</option>
+            <option value="cyclone_fani_2019">🌀 Live Model Prediction: Cyclone FANI (Bay of Bengal / Cat 4)</option>
+            <option value="interactive_radar">🎯 Interactive Radar (Click Map to Ingest & Predict Live)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="nio-feed-telemetry" id="nio-feed-telemetry-chips">
+        <div class="nio-chip" title="Live Surface Pressure over Bay of Bengal">
+          <span class="nio-chip-label">BoB MSLP:</span>
+          <strong id="chip-bob-pressure" class="nio-chip-val">1008.0 hPa</strong>
+        </div>
+        <div class="nio-chip" title="Live Surface Wind over Bay of Bengal">
+          <span class="nio-chip-label">BoB Wind:</span>
+          <strong id="chip-bob-wind" class="nio-chip-val">26.1 km/h (14 kt)</strong>
+        </div>
+        <div class="nio-chip" title="Live Surface Pressure over Arabian Sea">
+          <span class="nio-chip-label">Arabian Sea:</span>
+          <strong id="chip-arabian-pressure" class="nio-chip-val">1011.4 hPa</strong>
+        </div>
+        <div class="nio-chip highlight-chip" title="U-Net Neural IR Eye Detector Scan Result">
+          <span class="nio-chip-label">AI Vortex Scan:</span>
+          <strong id="chip-vortex-scan" class="nio-chip-val">0 Active Vortices</strong>
+        </div>
+      </div>
+
+      <div class="nio-feed-actions">
+        <button class="btn btn-sm btn-feed-step" id="btn-feed-step" onclick="handleFeedStep()" title="Advance to next synoptic observation in feed" style="display:none;">
+          ⏭️ Step Synoptic Fix
+        </button>
+        <button class="btn btn-sm btn-feed-refresh" id="btn-feed-refresh" onclick="refreshLiveOceanFeeds()" title="Refresh live telemetry from open oceanic and satellite feeds">
+          🔄 Sync Live Sensors
+        </button>
+        <button class="btn btn-sm btn-feed-predict" id="btn-toggle-map-click" onclick="toggleMapClickPredictMode()" title="Click anywhere on Bay of Bengal or Arabian Sea to ingest a vortex">
+          🎯 Ingest on Map
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- Flat Red Advisory Banner -->
   <div class="alert-banner" id="global-alert-banner">
     <div class="alert-container">
       <div class="alert-left">
         <span class="alert-pill">BULLETIN #16</span>
-        <span class="alert-title" id="banner-warning-status">RED ALERT — VERY SEVERE CYCLONIC STORM (CYCLONE DANA)</span>
+        <span class="alert-pill" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.4); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">LIVE OPERATIONAL INFERENCE</span>
+        <span class="alert-title" id="banner-warning-status">RED ALERT — VERY SEVERE CYCLONIC STORM</span>
       </div>
       <div class="alert-meta" id="banner-alert-meta">
         Landfall expected near Puri & Dhamra Coast within 12-14 hours. Winds 120-145 km/h. Mandatory evacuation underway.
@@ -122,7 +176,7 @@
       <div class="cmd-metric-icon">🌀</div>
       <div class="cmd-metric-data">
         <span class="cmd-label">Active System</span>
-        <span class="cmd-val" id="strip-storm-name">Dana (VSCS)</span>
+        <span class="cmd-val" id="strip-storm-name">Active System (VSCS)</span>
       </div>
     </div>
     <div class="cmd-metric-item">
@@ -235,7 +289,7 @@
           <div class="funnel-detail-metrics" id="funnel-detail-metrics">
             <div class="funnel-metric-box">
               <div class="m-label">Classification</div>
-              <div class="m-val" style="color: var(--red-alert);" id="funnel-m-class">VSCS (Dana)</div>
+              <div class="m-val" style="color: var(--red-alert);" id="funnel-m-class">VSCS (Active)</div>
             </div>
             <div class="funnel-metric-box">
               <div class="m-label">Peak Winds</div>
@@ -252,6 +306,33 @@
           </div>
         </div>
       </div>
+
+      <!-- =========================================================
+           ISRO MOSDAC LIVE SATELLITE INTEGRATION & ODISHA PREDICTOR
+           ========================================================= -->
+      <div class="mosdac-live-strip" id="mosdac-live-strip">
+        <div class="mosdac-strip-left">
+          <div class="mosdac-badge-row">
+            <span class="badge badge-navy" style="display: inline-flex; align-items: center; gap: 6px;">
+              <span class="live-indicator-pulse"></span>
+              <span id="mosdac-pill-text">ISRO MOSDAC LIVE SATELLITE STREAM (INSAT-3DS TIR1)</span>
+            </span>
+            <span class="badge badge-red" id="odisha-system-badge">⚡ ACTIVE ODISHA SYSTEM DETECTED</span>
+            <span class="subtext" style="font-size: 11px; color: #4B5563;">Resolution: 4km Nadir | Cadence: 15-min Rapid Scan</span>
+          </div>
+          <div class="mosdac-system-headline" id="mosdac-system-headline">
+            <strong>Bay of Bengal Cyclonic Disturbance:</strong> Convective vortex eye localized at <span id="mosdac-eye-fix" style="font-weight: 700; color: var(--goi-navy);">18.47°N, 86.81°E</span>. Cloud-top Tb: <span id="mosdac-min-tb" style="color: #DC2626; font-weight: 700;">-76.9°C</span>. Tracking 326° NNW @ 16.5 km/h towards Puri–Dhamra Coast.
+          </div>
+        </div>
+        <div class="mosdac-strip-actions">
+          <button class="btn btn-primary btn-sm" id="btn-sync-mosdac" onclick="syncLiveMOSDACFeed()" title="Fetch latest MOSDAC satellite observation and run live 5-model neural inference" style="background:#2563EB; border-color:#1D4ED8; font-weight:600;">
+            <span id="mosdac-sync-icon">⚡</span> Sync Live MOSDAC & Run Model
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-config-mosdac" onclick="openMOSDACConfigModal()" title="Configure MOSDAC credentials, API tokens, and satellite products">
+            ⚙️ MOSDAC Credentials
+          </button>
+        </div>
+      </div>
       
       <div class="gis-layout">
         <!-- Map Column -->
@@ -266,6 +347,8 @@
                   <button class="seg-btn" id="btn-mode-both" onclick="setMapVisualizationMode('both')">Combined</button>
                 </div>
                 <div class="map-action-btns">
+                  <button class="btn btn-secondary btn-sm active" id="btn-toggle-clouds" onclick="toggleMOSDACCloudOverlay()" title="Toggle ISRO MOSDAC INSAT-3DS Live Thermal IR Cloud Overlay" style="background:#0284C7; border-color:#0369A1; color:#FFF; font-weight:700;">☁️ Live Clouds: ON</button>
+                  <button class="btn btn-primary btn-sm" id="btn-live-mosdac-sync" onclick="syncLiveMOSDACFeed()" title="Ingest live MOSDAC INSAT-3DS frame and run prediction pipeline" style="background:#2563EB; border-color:#1D4ED8; color:#FFF; font-weight:600;">⚡ Sync Live MOSDAC</button>
                   <button class="btn btn-success btn-sm" id="btn-find-safe-route" onclick="findAndRenderSaferRoute()" title="Calculate surge-safe inland route to nearest available shelter">🧭 Find Safer Route</button>
                   <button class="btn btn-primary btn-sm" id="btn-google-maps-route" onclick="openNearestShelterInGoogleMaps()" title="Take user's current GPS location and route to nearest shelter using Google Maps" style="background:#1A73E8; border-color:#1557B0; color:#FFF; font-weight:600;">🗺️ Google Maps</button>
                   <button class="btn btn-secondary btn-sm" id="btn-toggle-lrs" onclick="toggleLocalRiskMapLayer()" title="Toggle District Local Risk Scores overlay on map">📊 Risk Scores</button>
@@ -277,10 +360,30 @@
             
             <div class="map-container">
               <div id="cyclone-map"></div>
+
+              <!-- Floating MOSDAC Live Cloud Sensor Badge & Opacity Slider -->
+              <div class="map-overlay-cloud-telemetry" id="map-cloud-telemetry">
+                <div class="cloud-telemetry-header">
+                  <span class="pulse-indicator-dot"></span>
+                  <span style="font-weight: 700; color: #FFF; letter-spacing: 0.3px;">ISRO MOSDAC INSAT-3DS TIR1 (10.8µm)</span>
+                </div>
+                <div class="cloud-telemetry-body">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="telemetry-chip">Coldest Cloud Top: <strong id="cloud-min-temp" style="color: #F472B6;">-80.1°C</strong></span>
+                    <span class="telemetry-chip" style="font-size:10px; background:rgba(2,132,199,0.3); padding:1px 5px; border-radius:3px; border:1px solid rgba(14,165,233,0.4);">Dvorak BD-Curve</span>
+                  </div>
+                  <div class="cloud-opacity-ctrl">
+                    <span>Cloud Opacity:</span>
+                    <input type="range" id="cloud-opacity-slider" min="15" max="95" value="65" oninput="setCloudOverlayOpacity(this.value)">
+                    <span id="cloud-opacity-val" style="font-weight:700; color:#38BDF8;">65%</span>
+                  </div>
+                </div>
+              </div>
               
               <!-- Map Legend Overlay (Official IMD Symbology matching official charts) -->
               <div class="map-overlay-legend">
                 <div style="font-weight: 700; margin-bottom: 5px; color: var(--goi-navy); border-bottom: 1px solid var(--border-light); padding-bottom: 2px;">OFFICIAL IMD HAZARD & TRACK LEGEND</div>
+                <div class="legend-item"><span class="legend-symbol" style="background: linear-gradient(90deg, #EE4DF5, #EF4444, #F59E0B, #0EA5E9); border: 1px solid rgba(0,0,0,0.3);"></span> Live MOSDAC Clouds (&lt;-68°C to -23°C)</div>
                 <div class="legend-item"><span class="legend-symbol" style="background:#22C55E; border: 1.5px solid #14532D;"></span> 72h Uncertainty Cone (IMD Model)</div>
                 <div class="legend-item"><span class="legend-symbol" style="background:#22C55E; border: 1.5px solid #15803D;"></span> Hurricane Winds (&ge;64 KT / 120 km/h)</div>
                 <div class="legend-item"><span class="legend-symbol" style="background:#3B82F6; border: 1.5px solid #1D4ED8;"></span> Storm Winds (50 - 63 KT / 90-117 km/h)</div>
@@ -372,7 +475,7 @@
             <div class="telemetry-grid">
               <div class="telemetry-cell">
                 <div class="label">System Name</div>
-                <div class="value" id="tel-storm-name">Cyclone Dana</div>
+                <div class="value" id="tel-storm-name">Active System</div>
                 <div class="subtext">Bay of Bengal (NIO-06)</div>
               </div>
               <div class="telemetry-cell">
@@ -405,6 +508,108 @@
             <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
               <strong>Estimated Landfall:</strong> <span id="tel-landfall" style="color: var(--red-alert-dark); font-weight: 700;">Within 12-14 Hours (Puri-Dhamra corridor)</span>
             </div>
+          </div>
+
+          <!-- Dedicated AI/ML Cyclone Intelligence: Identification, Classification & Formation Prediction -->
+          <div class="panel-card ai-intelligence-card" id="ai-cyclone-intelligence-card">
+            <div class="panel-header">
+              <h3>AI Model Triple Engine (PS 26070)</h3>
+              <span class="badge badge-primary" id="ai-engine-status-badge">3 Pillars Active</span>
+            </div>
+
+            <div class="ai-pillars-grid">
+              <!-- Pillar 1: Identification -->
+              <div class="ai-pillar-box pillar-identification">
+                <div class="pillar-header">
+                  <span class="pillar-title">🎯 1. IDENTIFICATION</span>
+                  <span class="pillar-badge badge-green" id="ai-id-badge">IDENTIFIED</span>
+                </div>
+                <div class="pillar-body">
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Vortex Eye Fix:</span>
+                    <strong class="val" id="ai-id-center">18.42°N, 86.85°E</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Detection Confidence:</span>
+                    <strong class="val" id="ai-id-conf">92.4% (Sub-pixel Fix)</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Circulation Radius:</span>
+                    <span class="val" id="ai-id-radius">280 km gale core</span>
+                  </div>
+                  <div class="pillar-subtext" id="ai-id-method">U-Net CenterNet Deep IR Eye Localizer (0.04° Res)</div>
+                </div>
+              </div>
+
+              <!-- Pillar 2: Classification -->
+              <div class="ai-pillar-box pillar-classification">
+                <div class="pillar-header">
+                  <span class="pillar-title">🏷️ 2. CLASSIFICATION</span>
+                  <span class="pillar-badge badge-red" id="ai-class-badge">VSCS</span>
+                </div>
+                <div class="pillar-body">
+                  <div class="pillar-metric-line">
+                    <span class="lbl">IMD Scale Category:</span>
+                    <strong class="val" id="ai-class-imd">Very Severe Cyclonic Storm</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Dvorak Intensity:</span>
+                    <strong class="val" id="ai-class-dvorak">T4.5 (Curved Band / CDO)</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Rapid Intensification (RI):</span>
+                    <span class="val" id="ai-class-ri">58.5% (High RI Risk)</span>
+                  </div>
+                  <div class="pillar-subtext" id="ai-class-method">Multi-Task Dvorak CNN + Hybrid GBDT Stacking</div>
+                </div>
+              </div>
+
+              <!-- Pillar 3: Cyclogenesis / Formation Prediction -->
+              <div class="ai-pillar-box pillar-formation">
+                <div class="pillar-header">
+                  <span class="pillar-title">⚡ 3. PREDICTS FORMATION</span>
+                  <span class="pillar-badge badge-yellow" id="ai-genesis-badge">GPI 8.4</span>
+                </div>
+                <div class="pillar-body">
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Genesis Potential Index (GPI):</span>
+                    <strong class="val" id="ai-genesis-gpi">8.4 (High Favorability)</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Basin Formation Probability:</span>
+                    <strong class="val" id="ai-genesis-chance">68.5% (T-14d Horizon)</strong>
+                  </div>
+                  <div class="pillar-metric-line">
+                    <span class="lbl">Predicted Formation Center:</span>
+                    <span class="val" id="ai-genesis-target">14.8°N, 87.7°E (ETA: 18h)</span>
+                  </div>
+                  <div class="pillar-diagnostics" id="ai-genesis-diagnostics">
+                    <span class="diag-chip chip-green">SST: 29.8°C</span>
+                    <span class="diag-chip chip-green">Shear: 11.2 kt</span>
+                    <span class="diag-chip chip-green">RH: 78%</span>
+                    <span class="diag-chip chip-green">Vort: +14.0</span>
+                  </div>
+                  <div class="pillar-subtext" id="ai-genesis-method">Emanuel-Nolan GPI & Dynamic Atmospheric Model</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card development-watch-card">
+            <div class="panel-header">
+              <h3>Cyclone Chances & Building Systems</h3>
+              <span class="badge badge-yellow" id="development-watch-badge">Model Watch</span>
+            </div>
+            <div class="development-chance-row">
+              <div>
+                <div class="label">Formation Chance</div>
+                <div class="development-chance-value" id="development-chance-value">--%</div>
+              </div>
+              <div class="development-meter"><span id="development-chance-meter"></span></div>
+            </div>
+            <div class="development-stage" id="development-stage">Waiting for satellite observation...</div>
+            <div class="developing-systems-list" id="developing-systems-list"></div>
+            <div class="development-note" id="development-note">Proxy model guidance only. Confirm with official IMD advisories.</div>
           </div>
 
           <!-- Official Bulletin Text -->
@@ -898,6 +1103,58 @@
     </div>
   </div>
 
+  <!-- MOSDAC Configuration Modal -->
+  <div class="modal-overlay" id="mosdac-config-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🛰️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 15px; color: var(--goi-navy);">ISRO MOSDAC Satellite Ingestion Settings</h3>
+            <div style="font-size: 11px; color: #6B7280;">Configure approved credentials & satellite data streams</div>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeMOSDACConfigModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; font-size: 12px; color: #1E40AF; margin-bottom: 14px;">
+          <strong>ℹ️ Verified MOSDAC Approval:</strong> Connect your approved ISRO MOSDAC account (mosdac.gov.in) to ingest live calibrated radiance arrays for the Bay of Bengal & Odisha coastline.
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 4px;">MOSDAC Username / Registered Email</label>
+          <input type="text" id="mosdac-user-input" class="form-control" style="width: 100%; padding: 6px 10px; border: 1px solid #D1D5DB;" placeholder="e.g. your_registered_email@domain.com">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 4px;">MOSDAC Password / API Access Token</label>
+          <input type="password" id="mosdac-token-input" class="form-control" style="width: 100%; padding: 6px 10px; border: 1px solid #D1D5DB;" placeholder="Enter MOSDAC password or token">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 4px;">Primary Satellite</label>
+            <select id="mosdac-sat-select" class="form-control" style="width: 100%; padding: 6px 10px; border: 1px solid #D1D5DB;">
+              <option value="INSAT-3DS" selected>INSAT-3DS (Primary Operational)</option>
+              <option value="INSAT-3DR">INSAT-3DR (Standby Slot)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 4px;">Sensor Channel</label>
+            <select id="mosdac-chan-select" class="form-control" style="width: 100%; padding: 6px 10px; border: 1px solid #D1D5DB;">
+              <option value="TIR1" selected>TIR-1 Thermal IR (10.8 µm)</option>
+              <option value="TIR2">TIR-2 Split Window (12.0 µm)</option>
+              <option value="WV">Water Vapor (6.7 µm)</option>
+              <option value="VIS">Visible (0.65 µm High-Res)</option>
+            </select>
+          </div>
+        </div>
+        <div id="mosdac-save-status" style="font-size: 12px; margin-bottom: 10px; display: none;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="closeMOSDACConfigModal()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="saveMOSDACConfiguration()" style="background: var(--goi-navy); border-color: var(--goi-navy); color: #FFF; font-weight: 600;">💾 Save & Connect MOSDAC</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Official Government Footer -->
   <footer class="goi-footer">
     <div class="footer-container">
@@ -915,6 +1172,6 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Main Application Script -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>

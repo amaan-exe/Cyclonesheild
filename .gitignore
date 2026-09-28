@@ -54,6 +54,8 @@ logs/
 user_prompt.txt
 ppt_slides.txt
 parse_ppt.py
+pg_log.txt
+cloud-overlay-debug.png
 
 # Checkpoints & Model Weights (too large for GitHub)
 *.pt
@@ -64,10 +66,15 @@ parse_ppt.py
 *.onnx
 *.safetensors
 
-# Large binary datasets
+# Large binary datasets & outputs (except trained checkpoints)
 data/
 datasets/
 outputs/
+!ml_model_repo/outputs/
+!ml_model_repo/outputs/checkpoints/
+!ml_model_repo/outputs/checkpoints/*
+!ml_model_repo/outputs/checkpoints/*.pt
+!ml_model_repo/outputs/checkpoints/*.joblib
 *.npy
 *.npz
 *.nc

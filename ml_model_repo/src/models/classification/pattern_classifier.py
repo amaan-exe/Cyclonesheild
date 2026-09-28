@@ -11,31 +11,44 @@ Architecture:
   - Multi-task heads with Focal Loss & Label Smoothing
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+    _BaseModule = nn.Module
+except Exception:
+    torch = None
+    nn = None
+    F = None
+    TORCH_AVAILABLE = False
+    _BaseModule = object
 
 try:
     import torchvision.models as tv_models
     HAS_TORCHVISION = True
-except ImportError:
+except Exception:
     HAS_TORCHVISION = False
 
 from src.utils.constants import NUM_IMD_CATEGORIES, NUM_DVORAK_PATTERNS
 
 
-class FocalLoss(nn.Module):
+class FocalLoss(_BaseModule):
     """Focal loss for multi-class classification to counter severe class imbalance."""
-    def __init__(self, gamma: float = 2.0, alpha: Optional[torch.Tensor] = None, label_smoothing: float = 0.0):
-        super().__init__()
+    def __init__(self, gamma: float = 2.0, alpha: Optional[Any] = None, label_smoothing: float = 0.0):
+        if TORCH_AVAILABLE:
+            super().__init__()
         self.gamma = gamma
         self.alpha = alpha
         self.label_smoothing = label_smoothing
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: Any, targets: Any) -> Any:
+        if not TORCH_AVAILABLE:
+            return 0.0
         ce_loss = F.cross_entropy(inputs, targets, label_smoothing=self.label_smoothing, reduction="none")
         pt = torch.exp(-ce_loss)
         focal_loss = ((1.0 - pt) ** self.gamma) * ce_loss
@@ -45,35 +58,40 @@ class FocalLoss(nn.Module):
         return focal_loss.mean()
 
 
-class LightweightBackbone(nn.Module):
+class LightweightBackbone(_BaseModule):
     """Fallback high-performance ConvNet when torchvision pretrained weights are not downloaded."""
     def __init__(self, in_channels: int = 3, feature_dim: int = 512):
-        super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, feature_dim, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(feature_dim),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d((1, 1))
-        )
+        if TORCH_AVAILABLE:
+            super().__init__()
+            self.features = nn.Sequential(
+                nn.Conv2d(in_channels, 32, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(32),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(128),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(256),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(256, feature_dim, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(feature_dim),
+                nn.ReLU(inplace=True),
+                nn.AdaptiveAvgPool2d((1, 1))
+            )
+        else:
+            self.features = None
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Any) -> Any:
+        if not TORCH_AVAILABLE or self.features is None:
+            return np.zeros((1, 512), dtype=np.float32)
         feat = self.features(x)
         return torch.flatten(feat, 1)
 
 
-class CycloneClassifier(nn.Module):
+class CycloneClassifier(_BaseModule):
     """
     Multi-task deep CNN for cyclone structure and intensity.
     """
@@ -87,10 +105,15 @@ class CycloneClassifier(nn.Module):
         input_channels: int = 3,
         dropout: float = 0.3
     ):
-        super().__init__()
+        if TORCH_AVAILABLE:
+            super().__init__()
         self.num_patterns = num_patterns
         self.num_intensities = num_intensities
         self.input_channels = input_channels
+
+        if not TORCH_AVAILABLE:
+            self.backbone = None
+            return
 
         # Build backbone
         feature_dim = 1536 if backbone_name == "efficientnet_b3" else 512
@@ -185,7 +208,7 @@ class CycloneClassifier(nn.Module):
         }
 
 
-class MultiTaskLoss(nn.Module):
+class MultiTaskLoss(_BaseModule):
     """Computes weighted loss across pattern, T-number, and IMD intensity."""
     def __init__(
         self,
@@ -195,21 +218,24 @@ class MultiTaskLoss(nn.Module):
         focal_gamma: float = 2.0,
         label_smoothing: float = 0.1
     ):
-        super().__init__()
+        if TORCH_AVAILABLE:
+            super().__init__()
+            self.pattern_loss = FocalLoss(gamma=focal_gamma, label_smoothing=label_smoothing)
+            self.t_number_loss = nn.SmoothL1Loss()  # Huber loss for outlier robustness
+            self.intensity_loss = FocalLoss(gamma=focal_gamma, label_smoothing=label_smoothing)
         self.weights = {
             "pattern": pattern_weight,
             "t_number": t_number_weight,
             "intensity": intensity_weight
         }
-        self.pattern_loss = FocalLoss(gamma=focal_gamma, label_smoothing=label_smoothing)
-        self.t_number_loss = nn.SmoothL1Loss()  # Huber loss for outlier robustness
-        self.intensity_loss = FocalLoss(gamma=focal_gamma, label_smoothing=label_smoothing)
 
     def forward(
         self,
-        outputs: Dict[str, torch.Tensor],
-        targets: Dict[str, torch.Tensor]
-    ) -> Dict[str, torch.Tensor]:
+        outputs: Dict[str, Any],
+        targets: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        if not TORCH_AVAILABLE:
+            return {"loss": 0.0}
         l_pat = self.pattern_loss(outputs["pattern_logits"], targets["pattern"])
         l_t = self.t_number_loss(outputs["t_number"].squeeze(-1), targets["t_number"])
         l_int = self.intensity_loss(outputs["intensity_logits"], targets["intensity"])

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyclone Shield AI — Technical Approach Flowchart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080C18;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px;
+      color: #0F172A;
+    }
+
+    /* ===== 16:9 SLIDE ===== */
+    .slide {
+      width: 100%; max-width: 1680px;
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 8px);
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 40px 100px -20px rgba(0,0,0,0.7);
+      padding: 10px 14px 6px 14px;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+
+    /* Tricolor */
+    .slide::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #FF9933 33.3%, #FFF 33.3%, #FFF 66.6%, #138808 66.6%);
+      z-index: 100;
+    }
+
+    /* ===== HEADER ===== */
+    .hdr {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2px solid #1E293B;
+      padding-bottom: 5px; margin-bottom: 3px; flex-shrink: 0;
+    }
+    .hdr-left { display: flex; flex-direction: column; }
+    .hdr-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px; font-weight: 800; color: #0284C7;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .hdr-tag::before {
+      content: ''; width: 6px; height: 6px;
+      background: #0284C7; border-radius: 50%; box-shadow: 0 0 6px #0284C7;
+    }
+    .hdr-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px; font-weight: 900; color: #0B2F5E; line-height: 1.05;
+    }
+    .hdr-title span {
+      background: linear-gradient(90deg, #0284C7, #7C3AED);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hdr-right { text-align: right; }
+    .sih-pill {
+      background: #0B2F5E; color: #FFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 4px;
+    }
+    .ps-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px; font-weight: 700; color: #64748B;
+    }
+
+    /* ===== MAIN: chart + level strip ===== */
+    .main {
+      flex: 1; display: flex; gap: 0;
+      min-height: 0; /* allow flex shrink */
+    }
+
+    /* ===== CHART AREA ===== */
+    .chart {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: space-between;
+      padding-right: 6px;
+    }
+
+    /* ===== LEVEL STRIP (right) ===== */
+    .strip {
+      width: 62px; display: flex; flex-direction: column;
+      border-left: 2.5px solid #1E293B; flex-shrink: 0;
+    }
+    .lv {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      text-align: center; font-family: 'Outfit', sans-serif;
+      font-weight: 900; font-size: 11px; color: #0B2F5E;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      line-height: 1.1; border-bottom: 1px solid #CBD5E1;
+      padding: 2px 3px;
+    }
+    .lv:last-child { border-bottom: none; }
+    .lv-1 { background: #F0F9FF; color: #0369A1; }
+    .lv-2 { background: #F5F3FF; color: #6D28D9; }
+    .lv-3 { background: #F0FDF4; color: #15803D; }
+    .lv-4 { background: #FFF7ED; color: #C2410C; }
+
+    /* ===== ROW OF BOXES ===== */
+    .row {
+      display: flex; gap: 8px; width: 100%;
+    }
+
+    /* ===== BOX ===== */
+    .bx {
+      flex: 1; background: #F1F5F9; border: 1.5px solid #94A3B8;
+      border-radius: 4px; padding: 4px 7px;
+      text-align: center; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1px;
+      min-height: 38px;
+    }
+    .bx-t {
+      font-size: 10px; font-weight: 900; color: #0F172A; line-height: 1.15;
+    }
+    .bx-d {
+      font-size: 7.5px; font-weight: 600; color: #475569; line-height: 1.15;
+    }
+    .bx-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6.5px; font-weight: 800; color: #64748B;
+    }
+
+    /* Color variants */
+    .bx-blue { background: #EFF6FF; border-color: #60A5FA; }
+    .bx-blue .bx-t { color: #1E40AF; }
+    .bx-purple { background: #F5F3FF; border-color: #A78BFA; }
+    .bx-purple .bx-t { color: #5B21B6; }
+    .bx-green { background: #F0FDF4; border-color: #4ADE80; }
+    .bx-green .bx-t { color: #166534; }
+    .bx-amber { background: #FFFBEB; border-color: #FBBF24; }
+    .bx-amber .bx-t { color: #92400E; }
+    .bx-orange { background: #FFF7ED; border-color: #FB923C; }
+    .bx-orange .bx-t { color: #9A3412; }
+    .bx-red { background: #FEF2F2; border-color: #F87171; }
+    .bx-red .bx-t { color: #991B1B; }
+
+    /* ===== ARROW ROW (downward arrows between box rows) ===== */
+    .ar {
+      display: flex; gap: 8px; width: 100%;
+      height: 20px;
+    }
+    .ar-cell {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+    }
+    .arrow-d {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .arrow-stem {
+      width: 2.5px; height: 8px; background: #334155;
+    }
+    .arrow-head {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid #334155;
+    }
+
+    /* ===== HORIZONTAL MERGE BAR ===== */
+    .bar {
+      width: 100%; height: 10px;
+      background: #CBD5E1; border: 1.5px solid #94A3B8;
+      border-radius: 2px; position: relative;
+    }
+
+    /* Circle connector on bar */
+    .bar-circle {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px; height: 14px;
+      background: #FFF; border: 2px solid #475569;
+      border-radius: 50%; z-index: 2;
+    }
+
+    /* ===== FOOTER ===== */
+    .ftr {
+      border-top: 1.5px solid #CBD5E1;
+      padding-top: 4px; margin-top: 3px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .ftr-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .ftr-b {
+      font-size: 7.5px; font-weight: 700; color: #1E293B;
+      background: #F8FAFC; border: 1px solid #CBD5E1;
+      padding: 1.5px 5px; border-radius: 3px;
+      display: flex; align-items: center; gap: 2px;
+    }
+    .ftr-b strong { color: #0B2F5E; }
+    .ftr-cite {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px; font-weight: 600; color: #64748B;
+    }
+
+    /* ===== TOOLBAR ===== */
+    .toolbar {
+      position: fixed; bottom: 10px; right: 14px;
+      display: flex; gap: 6px; z-index: 1000;
+    }
+    .tb {
+      background: #0B2F5E; border: 1.5px solid #1E40AF; color: #FFF;
+      padding: 6px 12px; border-radius: 6px;
+      font-size: 10px; font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .tb:hover { background: #0284C7; transform: translateY(-2px); }
+    .tb-g { background: #15803D; border-color: #22C55E; }
+
+    @media print {
+      body { background: #FFF; padding: 0; }
+      .slide { box-shadow: none; border-radius: 0; max-width: 100%; }
+      .toolbar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="slide" id="presentation-slide">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-tag">Cyclone Shield AI &bull; Government of India &bull; IMD &amp; NDMA</div>
+      <h1 class="hdr-title">TECHNICAL APPROACH <span>FLOWCHART</span></h1>
+    </div>
+    <div class="hdr-right">
+      <div class="sih-pill">SMART INDIA HACKATHON 2026</div>
+      <div class="ps-code">PS-26070 &bull; Team Hexaminds</div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="chart">
+
+      <!-- ======== LEVEL ONE ======== -->
+
+      <!-- Row 1: 4 Data Sources (top boxes with arrows INTO them) -->
+      <div class="row">
+        <div class="bx bx-blue">
+          <span class="bx-t">🛰️ INSAT-3D/DR</span>
+          <span class="bx-d">ISRO MOSDAC 10.8µm TIR1 &amp; WV</span>
+          <span class="bx-tag">HDF5 &bull; 15-Min Feed</span>
+        </div>
+        <div class="bx bx-blue">
+          <span class="bx-t">🌪️ IMD Best Track</span>
+          <span class="bx-d">RSMC synoptic fixes (1982–2026)</span>
+          <span class="bx-tag">Ground-Truth &bull; Lat/Lon/P</span>
+        </div>
+        <div class="bx bx-blue">
+          <span class="bx-t">🌊 SST + Wind Shear</span>
+          <span class="bx-d">NOAA OISST &amp; GFS 850–200 hPa</span>
+          <span class="bx-tag">SST ≥ 26.5°C &bull; Shear &lt; 12kt</span>
+        </div>
+        <div class="bx bx-blue">
+          <span class="bx-t">🌧️ Rainfall</span>
+          <span class="bx-d">GPM/IMERG &amp; coastal DWR swaths</span>
+          <span class="bx-tag">Precipitation Rate (mm/h)</span>
+        </div>
+      </div>
+
+      <!-- Arrows down from 4 boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- MERGE BAR 1 -->
+      <div class="bar"></div>
+
+      <!-- Arrows down from bar to 4 preprocessing boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- Row 2: 4 Preprocessing boxes -->
+      <div class="row">
+        <div class="bx bx-purple">
+          <span class="bx-t">Radiance → Brightness Temperature</span>
+          <span class="bx-d">Planck Inversion LUT (Tb in Kelvin)</span>
+        </div>
+        <div class="bx bx-purple">
+          <span class="bx-t">Spatial Alignment</span>
+          <span class="bx-d">0.04° Bicubic Resampling Grid</span>
+        </div>
+        <div class="bx bx-purple">
+          <span class="bx-t">Temporal Sequencing</span>
+          <span class="bx-d">24h Spatio-Temporal 4D Tensor</span>
+        </div>
+        <div class="bx bx-purple">
+          <span class="bx-t">Feature Extraction</span>
+          <span class="bx-d">CDO Gradients &bull; Vorticity &bull; TCHP</span>
+        </div>
+      </div>
+
+      <!-- ======== LEVEL TWO ======== -->
+
+      <!-- Arrows down from 4 boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- MERGE BAR 2 with circle connector -->
+      <div class="bar"><div class="bar-circle"></div></div>
+
+      <!-- Arrows down from bar to 4 ML model boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- Row 3: 4 AI/ML Core model boxes -->
+      <div class="row">
+        <div class="bx bx-green">
+          <span class="bx-t">🎯 U-Net CNN → Vortex Detection</span>
+          <span class="bx-d">Sub-pixel eye fix ±0.05° &amp; R34 gale radius</span>
+          <span class="bx-tag">Eye Error ≤ 18km</span>
+        </div>
+        <div class="bx bx-green">
+          <span class="bx-t">🏷️ CNN → Pattern Classification</span>
+          <span class="bx-d">7 IMD classes (LPA→SuCS) &amp; Dvorak T-No</span>
+          <span class="bx-tag">MAE ≤ 0.38 T-No</span>
+        </div>
+        <div class="bx bx-green">
+          <span class="bx-t">⚡ XGBoost → Intensity</span>
+          <span class="bx-d">Hybrid stacking: visual + thermodynamic</span>
+          <span class="bx-tag">RI F1: 0.84</span>
+        </div>
+        <div class="bx bx-green">
+          <span class="bx-t">🌀 Physics-Informed GRU → Track</span>
+          <span class="bx-d">72h waypoints &bull; Coriolis &amp; β-drift</span>
+          <span class="bx-tag">72h: 192km Error</span>
+        </div>
+      </div>
+
+      <!-- ======== LEVEL THREE ======== -->
+
+      <!-- Arrows down from 4 boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- MERGE BAR 3 with circle -->
+      <div class="bar"><div class="bar-circle"></div></div>
+
+      <!-- Arrows down from bar to 2 explainability boxes + 3 risk boxes (5 total) -->
+      <div class="ar">
+        <div class="ar-cell"></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"></div>
+      </div>
+
+      <!-- Row 4: MC Dropout + Grad-CAM (centered 2 boxes in 4 columns) -->
+      <div class="row">
+        <div class="bx bx-amber" style="flex: 1.2;">
+          <span class="bx-t">📊 MC Dropout Confidence Envelope</span>
+          <span class="bx-d">N=50 Stochastic Passes &bull; 90% Epistemic Cone</span>
+        </div>
+        <div class="bx bx-amber" style="flex: 1.2;">
+          <span class="bx-t">🔥 Grad-CAM Prediction Explainability</span>
+          <span class="bx-d">CDO &amp; Eyewall Attention Activation Heatmaps</span>
+        </div>
+      </div>
+
+      <!-- Arrows down from 2 → merge bar → arrows to 3 risk boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- MERGE BAR 4 -->
+      <div class="bar"></div>
+
+      <!-- Arrows to 3 risk boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- Row 5: 3 Risk Assessment boxes -->
+      <div class="row">
+        <div class="bx bx-orange">
+          <span class="bx-t">💨 Wind Hazard</span>
+          <span class="bx-d">Holland radial decay: sustained wind &amp; gusts</span>
+          <span class="bx-tag">Weight: 35%</span>
+        </div>
+        <div class="bx bx-orange">
+          <span class="bx-t">🌊 Rainfall + Surge</span>
+          <span class="bx-d">ADCIRC tidal storm surge (2.0–3.2m)</span>
+          <span class="bx-tag">Weight: 35%</span>
+        </div>
+        <div class="bx bx-orange">
+          <span class="bx-t">👥 Population Vulnerability</span>
+          <span class="bx-d">Coastal proximity, density &amp; kutcha ratio</span>
+          <span class="bx-tag">Weight: 30%</span>
+        </div>
+      </div>
+
+      <!-- ======== LEVEL FOUR ======== -->
+
+      <!-- Arrows down from 3 risk → merge bar → arrows to 4 outputs -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- MERGE BAR 5 -->
+      <div class="bar"></div>
+
+      <!-- Arrows to 4 output boxes -->
+      <div class="ar">
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+        <div class="ar-cell"><div class="arrow-d"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
+      </div>
+
+      <!-- Row 6: 4 Civil Action Outputs -->
+      <div class="row">
+        <div class="bx bx-red">
+          <span class="bx-t">🌪️ 72h Track + Wind Swaths</span>
+          <span class="bx-d">34/50/64 KT swaths &amp; 90% uncertainty cone</span>
+          <span class="bx-tag">GIS Cartographic Overlay</span>
+        </div>
+        <div class="bx bx-red">
+          <span class="bx-t">🛣️ Surge-Safe Evacuation</span>
+          <span class="bx-d">Dijkstra elevation routing &lt;2 km coast bypass</span>
+          <span class="bx-tag">Inland High-Ground Corridor</span>
+        </div>
+        <div class="bx bx-red">
+          <span class="bx-t">🏠 Shelter Allocation</span>
+          <span class="bx-d">8 MPCS &bull; 3,600+ beds &bull; generator audit</span>
+          <span class="bx-tag">Live Bed Count &bull; Haversine</span>
+        </div>
+        <div class="bx bx-red">
+          <span class="bx-t">📡 SOS + CAP Alerts</span>
+          <span class="bx-d">OASIS CAP v1.2 &bull; NDMA SACHET &bull; 2G SMS</span>
+          <span class="bx-tag">Offline Emergency Dispatch</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LEVEL STRIP (right side) -->
+    <div class="strip">
+      <div class="lv lv-1">Level<br>One<br><span style="font-size:7px;font-family:'JetBrains Mono',monospace;letter-spacing:0;font-weight:700;color:#475569">Ingestion</span></div>
+      <div class="lv lv-2">Level<br>Two<br><span style="font-size:7px;font-family:'JetBrains Mono',monospace;letter-spacing:0;font-weight:700;color:#475569">AI/ML Core</span></div>
+      <div class="lv lv-3">Level<br>Three<br><span style="font-size:7px;font-family:'JetBrains Mono',monospace;letter-spacing:0;font-weight:700;color:#475569">Governance</span></div>
+      <div class="lv lv-4">Level<br>Four<br><span style="font-size:7px;font-family:'JetBrains Mono',monospace;letter-spacing:0;font-weight:700;color:#475569">Action</span></div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="ftr">
+    <div class="ftr-badges">
+      <div class="ftr-b">🔒 <strong>RLS:</strong> 6/6</div>
+      <div class="ftr-b">🧪 <strong>API:</strong> 20/20</div>
+      <div class="ftr-b">🎯 <strong>Eye:</strong> ≤18km</div>
+      <div class="ftr-b">🏷️ <strong>Dvorak:</strong> ≤0.38</div>
+      <div class="ftr-b">⚡ <strong>72h:</strong> 192km</div>
+      <div class="ftr-b">📊 <strong>LRS:</strong> 0.35W+0.35R+0.30P</div>
+    </div>
+    <div class="ftr-cite">SIH 2026 &bull; PS-26070 &bull; Team Hexaminds</div>
+  </footer>
+
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="tb tb-g" onclick="exportSlideImage()">📸 Export 4K PNG</button>
+  <button class="tb" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  <button class="tb" onclick="window.print()">🖨️ PDF</button>
+</div>
+
+<script>
+function toggleFullscreen() {
+  const el = document.getElementById('presentation-slide');
+  if (!document.fullscreenElement) {
+    (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }
+}
+function exportSlideImage() {
+  const el = document.getElementById('presentation-slide');
+  const btn = event.target;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Rendering...';
+  html2canvas(el, { scale: 2.5, useCORS: true, backgroundColor: '#FFF', logging: false })
+    .then(c => {
+      const a = document.createElement('a');
+      a.download = 'Cyclone_Shield_AI_Technical_Approach_4K.png';
+      a.href = c.toDataURL('image/png');
+      a.click();
+      btn.innerHTML = '✅ Saved!';
+      setTimeout(() => btn.innerHTML = orig, 2500);
+    }).catch(() => { alert('Use Print/PDF.'); btn.innerHTML = orig; });
+}
+</script>
+</body>
+</html>

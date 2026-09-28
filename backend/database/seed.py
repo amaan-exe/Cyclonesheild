@@ -2,22 +2,64 @@ import os
 import json
 import uuid
 import datetime
+from urllib.parse import urlparse
 import bcrypt
 import psycopg2
 
-DB_CONFIG = {
-    "dbname": "postgres",
-    "user": "postgres",
-    "password": "",
-    "host": "127.0.0.1",
-    "port": 5433
-}
+def _load_env_file():
+    env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+    if os.path.isfile(env_file):
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip()
+                        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                            v = v[1:-1]
+                        if k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+_load_env_file()
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    parsed = urlparse(DATABASE_URL)
+    DB_CONFIG = {
+        "dbname": parsed.path.lstrip("/") or "postgres",
+        "user": parsed.username or "postgres",
+        "password": parsed.password or "",
+        "host": parsed.hostname or "127.0.0.1",
+        "port": parsed.port or 5432
+    }
+    if parsed.hostname not in ("127.0.0.1", "localhost") or "DB_SSLMODE" in os.environ:
+        DB_CONFIG["sslmode"] = os.environ.get("DB_SSLMODE", "require")
+else:
+    DB_CONFIG = {
+        "dbname": os.environ.get("DB_NAME", "postgres"),
+        "user": os.environ.get("DB_USER", "postgres"),
+        "password": os.environ.get("DB_PASS", ""),
+        "host": os.environ.get("DB_HOST", "127.0.0.1"),
+        "port": int(os.environ.get("DB_PORT", 5432))
+    }
+    if DB_CONFIG["host"] not in ("127.0.0.1", "localhost") or "DB_SSLMODE" in os.environ:
+        DB_CONFIG["sslmode"] = os.environ.get("DB_SSLMODE", "require")
 
 def hash_pw(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def init_and_seed():
-    conn = psycopg2.connect(**DB_CONFIG)
+    if DATABASE_URL:
+        dsn = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
+        conn = psycopg2.connect(dsn)
+    else:
+        conn = psycopg2.connect(**DB_CONFIG)
     conn.autocommit = True
     cur = conn.cursor()
 

@@ -10,29 +10,43 @@ Includes:
 
 from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import torch.optim as optim
+    TORCH_AVAILABLE = True
+    _BaseModule = nn.Module
+except Exception:
+    torch = None
+    nn = None
+    F = None
+    optim = None
+    TORCH_AVAILABLE = False
+    _BaseModule = object
 
 from .cyclone_env import CycloneForecastEnv, HistoricalEpisode
 
 
-class ActorCriticNetwork(nn.Module):
+class ActorCriticNetwork(_BaseModule):
     """
     Continuous Actor-Critic Network for bounded forecast nudge prediction.
     """
 
     def __init__(self, state_dim: int = 8, action_dim: int = 3, hidden_dim: int = 64):
-        super().__init__()
-        self.shared = nn.Sequential(
-            nn.Linear(state_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.Tanh()
-        )
+        if TORCH_AVAILABLE:
+            super().__init__()
+            self.shared = nn.Sequential(
+                nn.Linear(state_dim, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.Tanh(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.Tanh()
+            )
+        else:
+            self.shared = None
 
         # Actor head outputs mean bounded continuous action (initialized close to 0 for identity warm start)
         self.actor_mean = nn.Sequential(
